@@ -5,31 +5,35 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-
+import Dashboard from "./pages/Dashboard";
+import CloneSetup from "./pages/CloneSetup";
+import ChatLog from "./pages/ChatLog";
+import Report from "./pages/Report";
+import Pricing from "./pages/Pricing";
+import { AnimatePresence } from "framer-motion";
 
 function Router() {
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait">
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/clone-setup" component={CloneSetup} />
+        <Route path="/chat-log" component={ChatLog} />
+        <Route path="/report" component={Report} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </AnimatePresence>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
+        {/* Design: Night Walker - Neo-Brutalism + Soft Dark UI */}
         <TooltipProvider>
           <Toaster />
           <Router />
