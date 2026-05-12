@@ -1,13 +1,11 @@
 /**
  * Report - 케미스트리 리포트
- * Design: Night Walker - Neo-Brutalism + Soft Dark UI
- * 호환성 분석, 레이더 차트, 대화 하이라이트
+ * Design: Warm Afternoon Conversation - 건실한 만남
  */
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import MobileNav from "@/components/MobileNav";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   ChevronLeft,
   Lock,
@@ -20,15 +18,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const REPORT_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/chemistry-report-VfhzLWP7LU6SEagvgGnzmp.webp";
+const REPORT_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/report-warm-MnRnkaimmvUfzLmysa9bE8.webp";
 
 const COMPATIBILITY_DATA = [
-  { label: "가치관", score: 94, color: "neon-mint" },
-  { label: "유머 코드", score: 88, color: "neon-pink" },
-  { label: "생활 패턴", score: 82, color: "neon-mint" },
-  { label: "관심사", score: 91, color: "neon-pink" },
-  { label: "소통 방식", score: 86, color: "neon-mint" },
-  { label: "연애관", score: 79, color: "neon-pink" },
+  { label: "가치관", score: 94, color: "warm-coral" },
+  { label: "유머 코드", score: 88, color: "sage" },
+  { label: "생활 패턴", score: 82, color: "gold" },
+  { label: "관심사", score: 91, color: "warm-coral" },
+  { label: "소통 방식", score: 86, color: "sage" },
+  { label: "연애관", score: 79, color: "gold" },
 ];
 
 const HIGHLIGHTS = [
@@ -48,18 +46,18 @@ const HIGHLIGHTS = [
     sentiment: "positive",
   },
   {
-    topic: "갈등 요소",
+    topic: "참고 사항",
     insight: "생활 리듬에서 약간의 차이가 있을 수 있습니다. 한 분은 아침형, 다른 분은 저녁형입니다.",
     sentiment: "warning",
   },
 ];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.5 },
+    transition: { delay: i * 0.08, duration: 0.5 },
   }),
 };
 
@@ -69,70 +67,62 @@ export default function Report() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b-2 border-[oklch(0.22_0.005_260)] bg-background/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-border">
         <div className="container py-4">
           <div className="flex items-center justify-between">
-            <button onClick={() => setLocation("/dashboard")} className="text-foreground/60 hover:text-foreground transition-colors">
+            <button onClick={() => setLocation("/dashboard")} className="text-muted-foreground hover:text-foreground transition-colors">
               <ChevronLeft size={24} />
             </button>
-            <h1 className="font-display text-lg text-foreground tracking-wide">
-              CHEMISTRY REPORT
+            <h1 className="font-semibold text-foreground">
+              케미스트리 리포트
             </h1>
             <div />
           </div>
         </div>
       </header>
 
-      <div className="container py-6 space-y-6">
+      <div className="container py-5 space-y-5">
         {/* Overall Score */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeUp}
           custom={0}
-          className="brutal-card p-6 text-center space-y-4"
+          className="warm-card p-6 text-center space-y-3"
         >
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">나의 클론 × 별빛산책자</span>
-          </div>
+          <p className="text-xs text-muted-foreground">나의 클론 × 별빛산책자</p>
           <div className="relative">
-            <span className="font-display text-8xl text-neon-mint neon-text-mint">92</span>
-            <span className="font-display text-3xl text-neon-mint/60">%</span>
+            <span className="text-7xl font-bold text-warm-coral">92</span>
+            <span className="text-2xl font-bold text-warm-coral/60">%</span>
           </div>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-foreground/70 font-medium">
             매우 높은 호환성을 보입니다
           </p>
-          <div className="flex justify-center gap-3">
-            <div className="flex items-center gap-1.5 text-[10px] text-neon-mint">
+          <div className="flex justify-center gap-4">
+            <div className="flex items-center gap-1.5 badge-coral">
               <TrendingUp size={12} />
               <span>상위 8%</span>
             </div>
-            <div className="h-3 w-px bg-[oklch(0.3_0.005_260)]" />
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 badge-sage">
               <MessageSquare size={12} />
               <span>31회 대화</span>
             </div>
           </div>
         </motion.div>
 
-        {/* Report Preview Image */}
+        {/* Report Image */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeUp}
           custom={1}
-          className="relative overflow-hidden border-2 border-[oklch(0.22_0.005_260)]"
-          style={{ borderRadius: "2px" }}
+          className="warm-card overflow-hidden"
         >
           <img
             src={REPORT_IMG}
-            alt="상세 분석 리포트"
+            alt="호환성 분석 리포트"
             className="w-full aspect-[3/4] object-cover object-top"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4 text-center">
-            <p className="text-xs text-foreground/60 mb-2">AI가 분석한 상세 호환성 리포트</p>
-          </div>
         </motion.div>
 
         {/* Compatibility Breakdown */}
@@ -143,32 +133,32 @@ export default function Report() {
           custom={2}
           className="space-y-4"
         >
-          <h2 className="font-display text-xl text-foreground tracking-wide">BREAKDOWN</h2>
+          <h2 className="font-display text-lg font-bold text-foreground">상세 분석</h2>
           <div className="space-y-3">
             {COMPATIBILITY_DATA.map((item, i) => (
               <motion.div
                 key={item.label}
                 variants={fadeUp}
                 custom={i + 3}
-                className="brutal-card p-4"
+                className="warm-card p-4"
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="text-sm font-medium text-foreground">{item.label}</span>
-                  <span
-                    className={`font-display text-xl ${
-                      item.color === "neon-mint" ? "text-neon-mint" : "text-neon-pink"
-                    }`}
-                  >
+                  <span className={`text-xl font-bold text-${item.color}`}>
                     {item.score}%
                   </span>
                 </div>
-                <div className="h-2 bg-[oklch(0.18_0.005_260)] overflow-hidden" style={{ borderRadius: "1px" }}>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${item.score}%` }}
-                    transition={{ delay: (i + 3) * 0.1, duration: 0.8 }}
-                    className={`h-full ${
-                      item.color === "neon-mint" ? "bg-neon-mint" : "bg-neon-pink"
+                    transition={{ delay: (i + 3) * 0.08, duration: 0.8 }}
+                    className={`h-full rounded-full ${
+                      item.color === "warm-coral"
+                        ? "gradient-coral"
+                        : item.color === "sage"
+                        ? "gradient-sage"
+                        : "bg-gold"
                     }`}
                   />
                 </div>
@@ -184,8 +174,8 @@ export default function Report() {
           viewport={{ once: true }}
           className="space-y-4"
         >
-          <motion.h2 variants={fadeUp} custom={0} className="font-display text-xl text-foreground tracking-wide">
-            HIGHLIGHTS
+          <motion.h2 variants={fadeUp} custom={0} className="font-display text-lg font-bold text-foreground">
+            대화 하이라이트
           </motion.h2>
           <div className="space-y-3">
             {HIGHLIGHTS.map((item, i) => (
@@ -193,21 +183,21 @@ export default function Report() {
                 key={item.topic}
                 variants={fadeUp}
                 custom={i + 1}
-                className={`brutal-card p-4 space-y-2 ${
-                  item.sentiment === "warning" ? "border-[oklch(0.7_0.15_50)]/30" : ""
+                className={`warm-card p-4 space-y-2 ${
+                  item.sentiment === "warning" ? "border-gold/30 bg-gold-light/20" : ""
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {item.sentiment === "warning" ? (
-                    <AlertTriangle size={14} className="text-[oklch(0.7_0.15_50)]" />
+                    <AlertTriangle size={14} className="text-gold" />
                   ) : (
-                    <Sparkles size={14} className="text-neon-mint" />
+                    <Sparkles size={14} className="text-warm-coral" />
                   )}
-                  <span className="text-xs font-bold text-foreground uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-foreground">
                     {item.topic}
                   </span>
                 </div>
-                <p className="text-sm text-foreground/60 leading-relaxed">{item.insight}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.insight}</p>
               </motion.div>
             ))}
           </div>
@@ -224,8 +214,7 @@ export default function Report() {
         >
           <Button
             onClick={() => setLocation("/chat-log")}
-            className="w-full h-14 bg-neon-mint text-background font-bold text-base tracking-wide border-2 border-neon-mint hover:bg-neon-mint/90 neon-glow-mint"
-            style={{ borderRadius: "2px" }}
+            className="w-full h-13 gradient-coral text-white font-semibold text-base rounded-full shadow-lg shadow-warm-coral/20"
           >
             <MessageSquare size={18} className="mr-2" />
             전체 대화 보기
@@ -235,8 +224,7 @@ export default function Report() {
             <Button
               onClick={() => toast.info("프리미엄 기능입니다. 상점에서 하트를 구매해주세요.")}
               variant="outline"
-              className="h-14 border-2 border-neon-pink/30 text-neon-pink hover:bg-neon-pink/10 hover:border-neon-pink font-medium"
-              style={{ borderRadius: "2px" }}
+              className="h-13 rounded-full border-border bg-white text-foreground font-medium hover:bg-sage-light hover:text-sage"
             >
               <Eye size={16} className="mr-2" />
               사진 보기
@@ -244,17 +232,16 @@ export default function Report() {
             <Button
               onClick={() => toast.info("프리미엄 기능입니다. 상점에서 하트를 구매해주세요.")}
               variant="outline"
-              className="h-14 border-2 border-neon-mint/30 text-neon-mint hover:bg-neon-mint/10 hover:border-neon-mint font-medium"
-              style={{ borderRadius: "2px" }}
+              className="h-13 rounded-full border-border bg-white text-foreground font-medium hover:bg-warm-coral-light hover:text-warm-coral"
             >
               <Heart size={16} className="mr-2" />
               대화 신청
             </Button>
           </div>
 
-          <div className="brutal-card p-3 flex items-center gap-3 border-neon-pink/20">
-            <Lock size={16} className="text-neon-pink shrink-0" />
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+          <div className="warm-card p-4 flex items-center gap-3 bg-muted/30">
+            <Lock size={16} className="text-muted-foreground shrink-0" />
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
               사진 보기와 직접 대화 신청은 프리미엄 기능입니다. 하트를 사용하여 잠금을 해제할 수 있습니다.
             </p>
           </div>

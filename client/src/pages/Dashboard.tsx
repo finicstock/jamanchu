@@ -1,12 +1,11 @@
 /**
  * Dashboard - AI 클론 활동 대시보드
- * Design: Night Walker - Neo-Brutalism + Soft Dark UI
- * 클론 상태, 진행 중인 채팅, 매칭 카드 리스트
+ * Design: Warm Afternoon Conversation - 건실한 만남
  */
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import MobileNav from "@/components/MobileNav";
-import { Activity, MessageSquare, Eye, Lock, ChevronRight } from "lucide-react";
+import { Activity, MessageSquare, Eye, Lock, ChevronRight, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
@@ -15,7 +14,7 @@ const MOCK_MATCHES = [
     id: 1,
     nickname: "별빛산책자",
     compatibility: 92,
-    status: "채팅 완료",
+    status: "리포트 완료",
     topics: ["여행", "음악", "요리"],
     lastChat: "2시간 전",
     photoLocked: true,
@@ -24,7 +23,7 @@ const MOCK_MATCHES = [
     id: 2,
     nickname: "도시의밤",
     compatibility: 87,
-    status: "채팅 중",
+    status: "대화 중",
     topics: ["영화", "독서", "카페"],
     lastChat: "진행 중",
     photoLocked: true,
@@ -33,7 +32,7 @@ const MOCK_MATCHES = [
     id: 3,
     nickname: "새벽감성",
     compatibility: 84,
-    status: "채팅 완료",
+    status: "리포트 완료",
     topics: ["운동", "음악", "반려동물"],
     lastChat: "5시간 전",
     photoLocked: false,
@@ -50,11 +49,11 @@ const MOCK_MATCHES = [
 ];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.5 },
+    transition: { delay: i * 0.08, duration: 0.5 },
   }),
 };
 
@@ -64,63 +63,63 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b-2 border-[oklch(0.22_0.005_260)] bg-background/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-border">
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-display text-2xl text-foreground tracking-wide">자만추</h1>
-              <p className="text-xs text-muted-foreground">AI 클론 대시보드</p>
+              <h1 className="font-display text-xl font-bold text-foreground">자만추</h1>
+              <p className="text-xs text-muted-foreground">AI 클론이 활동 중이에요</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-neon-mint animate-pulse-neon" />
-              <span className="text-xs text-neon-mint font-medium">클론 활동 중</span>
+            <div className="flex items-center gap-2 badge-sage">
+              <span className="h-1.5 w-1.5 rounded-full bg-sage animate-gentle-pulse" />
+              <span className="text-xs font-medium">활동 중</span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container py-6 space-y-6">
+      <div className="container py-5 space-y-5">
         {/* Clone Status Card */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={fadeUp}
           custom={0}
-          className="brutal-card p-5 space-y-4"
+          className="warm-card p-5 space-y-4"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border-2 border-neon-mint bg-neon-mint/10">
-                <Activity size={20} className="text-neon-mint" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-warm-coral-light">
+                <Activity size={20} className="text-warm-coral" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground">나의 클론</h3>
+                <h3 className="font-semibold text-foreground">나의 클론</h3>
                 <p className="text-xs text-muted-foreground">학습 완료 · 탐색 중</p>
               </div>
             </div>
             <div className="text-right">
-              <span className="font-display text-3xl text-neon-mint neon-text-mint">47</span>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">대화 완료</p>
+              <span className="text-3xl font-bold text-warm-coral">47</span>
+              <p className="text-[10px] text-muted-foreground">대화 완료</p>
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">오늘의 탐색 진행률</span>
-              <span className="text-neon-mint font-medium">73%</span>
+              <span className="text-sage font-medium">73%</span>
             </div>
-            <Progress value={73} className="h-2 bg-[oklch(0.18_0.005_260)]" />
+            <Progress value={73} className="h-2 bg-muted" />
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-1">
             {[
-              { label: "총 매칭", value: "12", color: "text-neon-mint" },
-              { label: "리포트", value: "8", color: "text-neon-pink" },
-              { label: "대기 중", value: "4", color: "text-foreground/60" },
+              { label: "총 매칭", value: "12", color: "text-warm-coral" },
+              { label: "리포트", value: "8", color: "text-sage" },
+              { label: "대기 중", value: "4", color: "text-gold" },
             ].map((stat) => (
-              <div key={stat.label} className="text-center border-2 border-[oklch(0.22_0.005_260)] p-2">
-                <span className={`font-display text-2xl ${stat.color}`}>{stat.value}</span>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">
+              <div key={stat.label} className="text-center bg-muted/50 rounded-xl p-2.5">
+                <span className={`text-2xl font-bold ${stat.color}`}>{stat.value}</span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
                   {stat.label}
                 </p>
               </div>
@@ -135,7 +134,7 @@ export default function Dashboard() {
           className="space-y-3"
         >
           <motion.div variants={fadeUp} custom={1} className="flex items-center justify-between">
-            <h2 className="font-display text-xl text-foreground tracking-wide">MATCHES</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">매칭 결과</h2>
             <span className="text-xs text-muted-foreground">{MOCK_MATCHES.length}명 발견</span>
           </motion.div>
 
@@ -144,32 +143,32 @@ export default function Dashboard() {
               key={match.id}
               variants={fadeUp}
               custom={i + 2}
-              className="brutal-card p-4 space-y-3"
+              className="warm-card p-4 space-y-3 active:scale-[0.98] transition-transform"
               onClick={() => setLocation("/report")}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {/* Avatar placeholder */}
-                  <div className="relative h-12 w-12 border-2 border-[oklch(0.3_0.005_260)] bg-[oklch(0.15_0.005_260)] flex items-center justify-center overflow-hidden">
+                  {/* Avatar */}
+                  <div className="relative h-12 w-12 rounded-full bg-gradient-to-br from-warm-coral-light to-sage-light flex items-center justify-center overflow-hidden">
                     {match.photoLocked ? (
                       <Lock size={16} className="text-muted-foreground" />
                     ) : (
-                      <Eye size={16} className="text-neon-mint" />
+                      <Eye size={16} className="text-sage" />
                     )}
                   </div>
                   <div>
-                    <h3 className="font-bold text-foreground text-sm">{match.nickname}</h3>
-                    <p className="text-[10px] text-muted-foreground">{match.lastChat}</p>
+                    <h3 className="font-semibold text-foreground text-sm">{match.nickname}</h3>
+                    <p className="text-[11px] text-muted-foreground">{match.lastChat}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <span
-                    className={`font-display text-2xl ${
+                    className={`text-2xl font-bold ${
                       match.compatibility >= 90
-                        ? "text-neon-mint neon-text-mint"
+                        ? "text-warm-coral"
                         : match.compatibility >= 85
-                        ? "text-neon-pink"
-                        : "text-foreground/60"
+                        ? "text-sage"
+                        : "text-gold"
                     }`}
                   >
                     {match.compatibility}%
@@ -182,7 +181,7 @@ export default function Dashboard() {
                   {match.topics.map((topic) => (
                     <span
                       key={topic}
-                      className="text-[10px] px-2 py-0.5 border border-[oklch(0.3_0.005_260)] text-muted-foreground"
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
                     >
                       {topic}
                     </span>
@@ -194,14 +193,14 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <div
                   className={`h-1.5 w-1.5 rounded-full ${
-                    match.status === "채팅 중"
-                      ? "bg-neon-mint animate-pulse-neon"
-                      : match.status === "채팅 완료"
-                      ? "bg-neon-pink"
+                    match.status === "대화 중"
+                      ? "bg-sage animate-gentle-pulse"
+                      : match.status === "리포트 완료"
+                      ? "bg-warm-coral"
                       : "bg-muted-foreground"
                   }`}
                 />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                <span className="text-[11px] text-muted-foreground">
                   {match.status}
                 </span>
               </div>
@@ -221,8 +220,7 @@ export default function Dashboard() {
           <Button
             onClick={() => setLocation("/chat-log")}
             variant="outline"
-            className="h-14 border-2 border-neon-mint/30 text-neon-mint hover:bg-neon-mint/10 hover:border-neon-mint font-medium"
-            style={{ borderRadius: "2px" }}
+            className="h-14 rounded-xl border-border bg-white text-foreground font-medium hover:bg-sage-light hover:text-sage hover:border-sage/30 transition-all"
           >
             <MessageSquare size={16} className="mr-2" />
             채팅 로그
@@ -230,11 +228,10 @@ export default function Dashboard() {
           <Button
             onClick={() => setLocation("/pricing")}
             variant="outline"
-            className="h-14 border-2 border-neon-pink/30 text-neon-pink hover:bg-neon-pink/10 hover:border-neon-pink font-medium"
-            style={{ borderRadius: "2px" }}
+            className="h-14 rounded-xl border-border bg-white text-foreground font-medium hover:bg-warm-coral-light hover:text-warm-coral hover:border-warm-coral/30 transition-all"
           >
-            <Eye size={16} className="mr-2" />
-            사진 잠금해제
+            <Heart size={16} className="mr-2" />
+            하트 충전
           </Button>
         </motion.div>
       </div>

@@ -1,58 +1,48 @@
 /**
  * MobileNav - 하단 네비게이션 바
- * Design: Night Walker - Neo-Brutalism + Soft Dark UI
- * 네온 민트/핑크 액센트, 두꺼운 보더, 다크 배경
+ * Design: Warm Afternoon Conversation - 건실한 만남
  */
 import { useLocation } from "wouter";
-import { motion } from "framer-motion";
-import { Home, MessageSquare, FileText, Sparkles, CreditCard } from "lucide-react";
+import { Home, Compass, User, ShoppingBag } from "lucide-react";
 
-const navItems = [
+const NAV_ITEMS = [
   { path: "/dashboard", icon: Home, label: "홈" },
-  { path: "/chat-log", icon: MessageSquare, label: "채팅" },
-  { path: "/clone-setup", icon: Sparkles, label: "클론" },
-  { path: "/report", icon: FileText, label: "리포트" },
-  { path: "/pricing", icon: CreditCard, label: "상점" },
+  { path: "/clone-setup", icon: User, label: "클론" },
+  { path: "/report", icon: Compass, label: "매칭" },
+  { path: "/pricing", icon: ShoppingBag, label: "상점" },
 ];
 
 export default function MobileNav() {
   const [location, setLocation] = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-[oklch(0.22_0.005_260)] bg-[oklch(0.08_0.005_260/95%)] backdrop-blur-xl">
-      <div className="container flex items-center justify-around py-2">
-        {navItems.map((item) => {
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-border">
+      <div className="max-w-[430px] mx-auto flex items-center justify-around py-2 px-2">
+        {NAV_ITEMS.map((item) => {
           const isActive = location === item.path;
           const Icon = item.icon;
           return (
             <button
               key={item.path}
               onClick={() => setLocation(item.path)}
-              className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 transition-all"
+              className={`flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-xl transition-all ${
+                isActive
+                  ? "text-warm-coral"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute -top-[2px] left-1/2 h-[2px] w-8 -translate-x-1/2 bg-neon-mint neon-glow-mint"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-              <Icon
-                size={20}
-                className={isActive ? "text-neon-mint drop-shadow-[0_0_8px_oklch(0.85_0.18_170/50%)]" : "text-muted-foreground"}
-              />
-              <span
-                className={`text-[10px] font-medium tracking-wider uppercase ${
-                  isActive ? "text-neon-mint" : "text-muted-foreground"
-                }`}
-              >
+              <div className={`relative p-1.5 rounded-xl transition-all ${
+                isActive ? "bg-warm-coral-light" : ""
+              }`}>
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+              </div>
+              <span className={`text-[10px] font-medium ${isActive ? "text-warm-coral" : ""}`}>
                 {item.label}
               </span>
             </button>
           );
         })}
       </div>
-      {/* Safe area for iOS */}
       <div className="h-[env(safe-area-inset-bottom)]" />
     </nav>
   );

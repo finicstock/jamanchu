@@ -32,8 +32,8 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
-        {/* Design: Night Walker - Neo-Brutalism + Soft Dark UI */}
+      <ThemeProvider defaultTheme="light">
+        {/* Design: Warm Afternoon Conversation - 건실한 만남 */}
         <TooltipProvider>
           <Toaster />
           <Router />
