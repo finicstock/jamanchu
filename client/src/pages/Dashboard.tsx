@@ -13,6 +13,8 @@ import {
   Sparkles,
   Search,
   Play,
+  PauseCircle,
+  Power,
   Loader2,
   CheckCircle2,
   Clock,
@@ -40,25 +42,62 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const { data: clone } = trpc.clone.getMyClone.useQuery(undefined, { enabled: isAuthenticated });
-  const { data: chats, refetch: refetchChats } = trpc.clone.getMyChats.useQuery(undefined, { enabled: isAuthenticated });
-  const { data: reports, refetch: refetchReports } = trpc.clone.getMyReports.useQuery(undefined, { enabled: isAuthenticated });
-  const { data: profile } = trpc.profile.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: clone, refetch: refetchClone } = trpc.clone.getMyClone.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+  const { data: chats, refetch: refetchChats } = trpc.clone.getMyChats.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
+  const { data: reports, refetch: refetchReports } =
+    trpc.clone.getMyReports.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: profile } = trpc.profile.getMyProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const utils = trpc.useUtils();
   const startChatMutation = trpc.clone.startChat.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       refetchChats();
       refetchReports();
       utils.profile.getMyProfile.invalidate();
       setIsSimulating(false);
+      if (data.report.status === "failed") {
+        toast.warning(`${data.partnerNickname}님과의 대화는 저장되었습니다.`, {
+          description:
+            "리포트 생성이 실패해 사용한 하트를 환불했습니다. 잠시 후 다시 시도해주세요.",
+        });
+        return;
+      }
       toast.success(`${data.partnerNickname}님과의 대화가 완료되었습니다!`, {
         description: `호환성 점수: ${data.report.overallScore}점`,
       });
     },
-    onError: (err) => {
+    onError: err => {
       setIsSimulating(false);
       toast.error("매칭 실패", {
+        description: err.message,
+      });
+    },
+  });
+  const setCloneStatusMutation = trpc.clone.setMyCloneStatus.useMutation({
+    onSuccess: data => {
+      refetchClone();
+      toast.success(
+        data.status === "active"
+          ? "클론 활동을 다시 시작했습니다."
+          : "클론을 일시정지했습니다.",
+        {
+          description:
+            data.status === "active"
+              ? "사전 궁합 탐색을 시작할 수 있어요."
+              : "일시정지 중에는 매칭 탐색을 쉬어갑니다.",
+        }
+      );
+    },
+    onError: err => {
+      toast.error("클론 상태 변경 실패", {
         description: err.message,
       });
     },
@@ -85,8 +124,21 @@ export default function Dashboard() {
   }
 
   const handleStartChat = () => {
+    if (clone?.status !== "active") {
+      toast.info("클론이 일시정지 중입니다.", {
+        description: "활동 재개 후 사전 궁합 탐색을 시작할 수 있어요.",
+      });
+      return;
+    }
     setIsSimulating(true);
     startChatMutation.mutate();
+  };
+
+  const handleToggleCloneStatus = () => {
+    if (!clone) return;
+    setCloneStatusMutation.mutate({
+      status: clone.status === "active" ? "paused" : "active",
+    });
   };
 
   return (
@@ -96,13 +148,17 @@ export default function Dashboard() {
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-display text-xl font-bold text-foreground">자만추</h1>
+              <h1 className="font-display text-xl font-bold text-foreground">
+                자만추
+              </h1>
               <p className="text-xs text-muted-foreground">AI 클론 대시보드</p>
             </div>
             {profile && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-warm-coral-light rounded-full">
                 <Heart size={12} className="text-warm-coral" />
-                <span className="text-xs font-bold text-warm-coral">{profile.hearts.balance}</span>
+                <span className="text-xs font-bold text-warm-coral">
+                  {profile.hearts.balance}
+                </span>
               </div>
             )}
           </div>
@@ -126,30 +182,56 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-foreground">{clone.nickname}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      clone.status === "active" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
-                    }`}>
+                    <h3 className="font-bold text-foreground">
+                      {clone.nickname}
+                    </h3>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        clone.status === "active"
+                          ? "bg-green-50 text-green-600"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
                       {clone.status === "active" ? "활동 중" : "비활성"}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{clone.age}세 · 매칭 대기 중</p>
+                  <p className="text-xs text-muted-foreground">
+                    {clone.age}세 · 매칭 대기 중
+                  </p>
                 </div>
               </div>
               <Button
                 onClick={handleStartChat}
-                disabled={isSimulating}
+                disabled={isSimulating || clone.status !== "active"}
                 className="w-full bg-warm-coral hover:bg-warm-coral/90 text-white rounded-full"
               >
                 {isSimulating ? (
                   <>
                     <Loader2 size={16} className="animate-spin mr-2" />
-                    AI 사전 대화 생성 중... (약 30초 소요)
+                    AI 사전 대화 생성 중... (약 10초 소요)
                   </>
                 ) : (
                   <>
                     <Play size={16} className="mr-2" />
                     사전 궁합 탐색 시작하기 (♥ 1)
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleToggleCloneStatus}
+                disabled={setCloneStatusMutation.isPending}
+                variant="outline"
+                className="w-full rounded-full bg-white"
+              >
+                {clone.status === "active" ? (
+                  <>
+                    <PauseCircle size={16} className="mr-2" />
+                    클론 일시정지
+                  </>
+                ) : (
+                  <>
+                    <Power size={16} className="mr-2" />
+                    클론 활동 재개
                   </>
                 )}
               </Button>
@@ -166,7 +248,9 @@ export default function Dashboard() {
                 <Activity size={24} className="text-warm-coral" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground text-base">아직 AI 클론이 없어요</h3>
+                <h3 className="font-semibold text-foreground text-base">
+                  아직 AI 클론이 없어요
+                </h3>
                 <p className="text-sm text-muted-foreground mt-1">
                   나의 성격과 가치관을 학습한 AI 클론을 만들어보세요.
                   <br />
@@ -194,17 +278,23 @@ export default function Dashboard() {
         >
           <div className="warm-card p-4 text-center">
             <MessageSquare size={18} className="mx-auto text-blue-500 mb-1" />
-            <p className="text-lg font-bold text-foreground">{chats?.length ?? 0}</p>
+            <p className="text-lg font-bold text-foreground">
+              {chats?.length ?? 0}
+            </p>
             <p className="text-[10px] text-muted-foreground">대화</p>
           </div>
           <div className="warm-card p-4 text-center">
             <FileText size={18} className="mx-auto text-green-500 mb-1" />
-            <p className="text-lg font-bold text-foreground">{reports?.length ?? 0}</p>
+            <p className="text-lg font-bold text-foreground">
+              {reports?.length ?? 0}
+            </p>
             <p className="text-[10px] text-muted-foreground">리포트</p>
           </div>
           <div className="warm-card p-4 text-center">
             <Heart size={18} className="mx-auto text-warm-coral mb-1" />
-            <p className="text-lg font-bold text-foreground">{profile?.hearts.balance ?? 0}</p>
+            <p className="text-lg font-bold text-foreground">
+              {profile?.hearts.balance ?? 0}
+            </p>
             <p className="text-[10px] text-muted-foreground">하트</p>
           </div>
         </motion.div>
@@ -223,15 +313,17 @@ export default function Dashboard() {
 
           {chats && chats.length > 0 ? (
             <div className="space-y-2">
-              {chats.slice(0, 5).map((chat) => (
+              {chats.slice(0, 5).map(chat => (
                 <button
                   key={chat.id}
                   onClick={() => setLocation(`/chat-log/${chat.id}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-sage-light/50 transition text-left"
                 >
-                  <div className={`h-9 w-9 rounded-full flex items-center justify-center ${
-                    chat.status === "completed" ? "bg-green-50" : "bg-blue-50"
-                  }`}>
+                  <div
+                    className={`h-9 w-9 rounded-full flex items-center justify-center ${
+                      chat.status === "completed" ? "bg-green-50" : "bg-blue-50"
+                    }`}
+                  >
                     {chat.status === "completed" ? (
                       <CheckCircle2 size={16} className="text-green-500" />
                     ) : (
@@ -239,11 +331,21 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{chat.partnerNickname}</p>
-                    <p className="text-xs text-muted-foreground">{chat.totalMessages}개 메시지 · {chat.status === "completed" ? "완료" : "진행 중"}</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {chat.partnerNickname}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {chat.totalMessages}개 메시지 ·{" "}
+                      {chat.status === "completed" ? "완료" : "진행 중"}
+                    </p>
                   </div>
                   <span className="text-[10px] text-muted-foreground">
-                    {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : ""}
+                    {chat.createdAt
+                      ? new Date(chat.createdAt).toLocaleDateString("ko-KR", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : ""}
                   </span>
                 </button>
               ))}
@@ -251,8 +353,12 @@ export default function Dashboard() {
           ) : (
             <div className="text-center py-6">
               <Search size={24} className="mx-auto text-gray-200 mb-2" />
-              <p className="text-xs text-muted-foreground">아직 대화 기록이 없습니다.</p>
-              <p className="text-[10px] text-muted-foreground mt-1">위에서 '사전 궁합 탐색 시작하기'를 눌러보세요!</p>
+              <p className="text-xs text-muted-foreground">
+                아직 대화 기록이 없습니다.
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                위에서 '사전 궁합 탐색 시작하기'를 눌러보세요!
+              </p>
             </div>
           )}
         </motion.div>
@@ -271,21 +377,46 @@ export default function Dashboard() {
 
           {reports && reports.length > 0 ? (
             <div className="space-y-2">
-              {reports.slice(0, 5).map((report) => (
+              {reports.slice(0, 5).map(report => (
                 <button
                   key={report.id}
                   onClick={() => setLocation(`/report/${report.id}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-sage-light/50 transition text-left"
                 >
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#E8725C] to-[#FF9A76] flex items-center justify-center">
-                    <span className="text-white text-[10px] font-bold">{report.overallScore}</span>
+                  <div
+                    className={`h-9 w-9 rounded-full flex items-center justify-center ${
+                      report.status === "failed"
+                        ? "bg-gray-100"
+                        : "bg-gradient-to-br from-[#E8725C] to-[#FF9A76]"
+                    }`}
+                  >
+                    <span
+                      className={`text-[10px] font-bold ${
+                        report.status === "failed"
+                          ? "text-gray-500"
+                          : "text-white"
+                      }`}
+                    >
+                      {report.status === "failed" ? "!" : report.overallScore}
+                    </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{report.partnerNickname}님과의 케미</p>
-                    <p className="text-xs text-muted-foreground">호환성 {report.overallScore}점</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {report.partnerNickname}님과의 케미
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {report.status === "failed"
+                        ? "리포트 생성 실패 · 환불됨"
+                        : `호환성 ${report.overallScore}점`}
+                    </p>
                   </div>
                   <span className="text-[10px] text-muted-foreground">
-                    {report.createdAt ? new Date(report.createdAt).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : ""}
+                    {report.createdAt
+                      ? new Date(report.createdAt).toLocaleDateString("ko-KR", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : ""}
                   </span>
                 </button>
               ))}
@@ -293,8 +424,12 @@ export default function Dashboard() {
           ) : (
             <div className="text-center py-6">
               <FileText size={24} className="mx-auto text-gray-200 mb-2" />
-              <p className="text-xs text-muted-foreground">아직 리포트가 없습니다.</p>
-              <p className="text-[10px] text-muted-foreground mt-1">대화가 완료되면 자동으로 리포트가 생성됩니다.</p>
+              <p className="text-xs text-muted-foreground">
+                아직 리포트가 없습니다.
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                대화가 완료되면 자동으로 리포트가 생성됩니다.
+              </p>
             </div>
           )}
         </motion.div>

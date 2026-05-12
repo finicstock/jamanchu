@@ -21,6 +21,9 @@ import {
   AlertCircle,
   FileText,
   ShieldCheck,
+  Link as LinkIcon,
+  Wand2,
+  Copy,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -96,11 +99,28 @@ type ContextFile = {
   charCount: number;
 };
 
+type SocialContextLink = {
+  id: string;
+  url: string;
+  platform: string;
+  note: string;
+};
+
 const MAX_CONTEXT_FILES = 5;
+const MAX_SOCIAL_LINKS = 5;
 const MAX_CONTEXT_FILE_BYTES = 512 * 1024;
 const MAX_CONTEXT_CHARS_PER_FILE = 5000;
 const MAX_TOTAL_CONTEXT_CHARS = 12000;
 const SUPPORTED_CONTEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv"];
+
+const SELF_INTRO_ASSIST_PROMPT =
+  "다음 정보를 바탕으로 데이팅 앱용 자기소개를 500자 이하로 따뜻하고 과장 없이 써줘. 말투는 담백하게, 가치관/취향/관계에서 중요하게 보는 점을 포함해줘.";
+const PRIVACY_ASSIST_PROMPT =
+  "AI 클론이 대화에서 말하지 않아야 할 정보 목록을 정리해줘. 연락처, 직장명, 가족 정보, 정확한 동네, 과거 연애사, 민감한 사건처럼 보호할 항목을 짧은 체크리스트로 만들어줘.";
+const SELF_INTRO_EXAMPLE =
+  "처음엔 조용하지만 편해지면 농담도 잘하는 편이에요. 주말에는 카페에서 책을 읽거나 가볍게 걷는 시간을 좋아하고, 서로의 생활 리듬을 존중하는 관계를 중요하게 생각합니다. 대화가 잘 통하고 작은 약속을 성실하게 지키는 사람에게 호감을 느껴요.";
+const PRIVACY_BOUNDARY_EXAMPLE =
+  "정확한 직장명, 연락처, 가족 정보, 사는 동네의 세부 위치, 과거 연애사, 경제 상황은 말하지 않기. 실제 만남이나 연락처 교환은 리포트 확인 후 내가 직접 결정하기.";
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes}B`;
@@ -175,6 +195,35 @@ function summarizeContextFile(
   };
 }
 
+function inferSocialPlatform(url: string) {
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  if (host.includes("instagram.com")) return "Instagram";
+  if (host.includes("youtube.com") || host.includes("youtu.be"))
+    return "YouTube";
+  if (host.includes("x.com") || host.includes("twitter.com")) return "X";
+  if (host.includes("linkedin.com")) return "LinkedIn";
+  if (host.includes("tistory.com")) return "Tistory";
+  if (host.includes("naver.com")) return "Naver";
+  if (host.includes("brunch.co.kr")) return "Brunch";
+  return host;
+}
+
+function normalizeSocialUrl(rawUrl: string) {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const url = new URL(withProtocol);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export default function CloneSetup() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -189,6 +238,9 @@ export default function CloneSetup() {
   const [selfIntro, setSelfIntro] = useState("");
   const [privacyBoundaries, setPrivacyBoundaries] = useState("");
   const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
+  const [socialUrl, setSocialUrl] = useState("");
+  const [socialNote, setSocialNote] = useState("");
+  const [socialLinks, setSocialLinks] = useState<SocialContextLink[]>([]);
   const [acceptedAiConsent, setAcceptedAiConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -326,6 +378,42 @@ export default function CloneSetup() {
     setContextFiles(prev => prev.filter(file => file.id !== id));
   };
 
+  const addSocialLink = () => {
+    if (socialLinks.length >= MAX_SOCIAL_LINKS) {
+      toast.error(
+        `SNS 링크는 최대 ${MAX_SOCIAL_LINKS}개까지 추가할 수 있습니다.`
+      );
+      return;
+    }
+
+    const normalizedUrl = normalizeSocialUrl(socialUrl);
+    if (!normalizedUrl) {
+      toast.error("올바른 SNS 또는 블로그 링크를 입력해주세요.");
+      return;
+    }
+    if (socialLinks.some(link => link.url === normalizedUrl)) {
+      toast.error("이미 추가한 링크입니다.");
+      return;
+    }
+
+    setSocialLinks(prev => [
+      ...prev,
+      {
+        id: `${normalizedUrl}-${crypto.randomUUID()}`,
+        url: normalizedUrl,
+        platform: inferSocialPlatform(normalizedUrl),
+        note: socialNote.trim(),
+      },
+    ]);
+    setSocialUrl("");
+    setSocialNote("");
+    toast.success("SNS 링크를 컨텍스트에 추가했습니다.");
+  };
+
+  const removeSocialLink = (id: string) => {
+    setSocialLinks(prev => prev.filter(link => link.id !== id));
+  };
+
   const buildUploadedContext = () => {
     const joined = contextFiles
       .map(file =>
@@ -342,6 +430,25 @@ export default function CloneSetup() {
     return joined.slice(0, MAX_TOTAL_CONTEXT_CHARS);
   };
 
+  const buildSocialContext = () => {
+    return socialLinks
+      .map(
+        link =>
+          `[SNS 링크] ${link.platform}\nURL: ${link.url}\n참고 메모: ${link.note || "공개 프로필의 관심사, 말투, 활동 주제를 참고"}`
+      )
+      .join("\n\n")
+      .slice(0, 3000);
+  };
+
+  const copyAssistPrompt = async (prompt: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      toast.success(`${label} 프롬프트를 복사했습니다.`);
+    } catch {
+      toast.error("프롬프트 복사에 실패했습니다.");
+    }
+  };
+
   const handleGenerate = () => {
     if (!selectedGender || !selectedPref) {
       toast.error("기본 정보를 모두 입력해주세요.");
@@ -355,8 +462,10 @@ export default function CloneSetup() {
       ? `공개 금지/주의 정보: ${privacyBoundaries.trim()}`
       : undefined;
     const uploadedContext = buildUploadedContext();
+    const socialContext = buildSocialContext();
     const profileValues = [
       selfIntro.trim(),
+      socialContext ? `SNS 링크 컨텍스트:\n${socialContext}` : "",
       uploadedContext ? `업로드 컨텍스트:\n${uploadedContext}` : "",
     ]
       .filter(Boolean)
@@ -606,6 +715,120 @@ export default function CloneSetup() {
                 </div>
               </div>
 
+              <div className="warm-card p-4 space-y-3 bg-warm-coral-light/25 border-warm-coral/20">
+                <div className="flex items-start gap-3">
+                  <Wand2
+                    size={17}
+                    className="mt-0.5 shrink-0 text-warm-coral"
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      LLM으로 초안 만들기
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      아래 문장을 ChatGPT 같은 LLM에 넣고, 나온 결과를 다듬어
+                      붙여넣으면 훨씬 쉽게 작성할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-foreground">
+                  {SELF_INTRO_ASSIST_PROMPT}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      copyAssistPrompt(SELF_INTRO_ASSIST_PROMPT, "자기소개")
+                    }
+                    className="h-10 rounded-full bg-white"
+                  >
+                    <Copy size={13} className="mr-1" />
+                    프롬프트 복사
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelfIntro(SELF_INTRO_EXAMPLE)}
+                    className="h-10 rounded-full bg-white"
+                  >
+                    예시 적용
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <LinkIcon size={12} className="text-warm-coral" />
+                    SNS 링크 컨텍스트
+                  </label>
+                  <span className="text-[10px] text-muted-foreground">
+                    {socialLinks.length}/{MAX_SOCIAL_LINKS}
+                  </span>
+                </div>
+                <div className="warm-card p-3 space-y-3">
+                  <input
+                    type="url"
+                    value={socialUrl}
+                    onChange={e => setSocialUrl(e.target.value)}
+                    placeholder="인스타그램, 블로그, 유튜브, 링크드인 등 공개 링크"
+                    className="w-full h-11 px-3 bg-white border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-warm-coral focus:ring-2 focus:ring-warm-coral/10 focus:outline-none"
+                  />
+                  <textarea
+                    value={socialNote}
+                    onChange={e => setSocialNote(e.target.value)}
+                    placeholder="이 링크에서 참고할 점을 적어주세요. 예: 여행 사진이 많음, 글투가 담백함, 일상 루틴이 잘 드러남"
+                    maxLength={240}
+                    rows={3}
+                    className="w-full px-3 py-2 bg-white border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-warm-coral focus:ring-2 focus:ring-warm-coral/10 focus:outline-none resize-none"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addSocialLink}
+                    variant="outline"
+                    className="h-10 w-full rounded-full"
+                  >
+                    <LinkIcon size={14} className="mr-2" />
+                    링크 추가
+                  </Button>
+                </div>
+                {socialLinks.length > 0 && (
+                  <div className="space-y-2">
+                    {socialLinks.map(link => (
+                      <div
+                        key={link.id}
+                        className="rounded-xl border border-border bg-white p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground">
+                              {link.platform}
+                            </p>
+                            <p className="truncate text-[11px] text-muted-foreground">
+                              {link.url}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeSocialLink(link.id)}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            aria-label={`${link.platform} 링크 제거`}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        {link.note && (
+                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                            {link.note}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
@@ -692,6 +915,50 @@ export default function CloneSetup() {
                   <span className="text-[10px] text-muted-foreground">
                     {privacyBoundaries.length}/500
                   </span>
+                </div>
+              </div>
+
+              <div className="warm-card p-4 space-y-3 bg-sage-light/25 border-sage/20">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck
+                    size={17}
+                    className="mt-0.5 shrink-0 text-sage"
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      말하지 않을 정보도 LLM으로 정리하기
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      민감정보를 직접 떠올리기 어렵다면 아래 요청문으로 보호
+                      범위를 먼저 정리해보세요.
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-foreground">
+                  {PRIVACY_ASSIST_PROMPT}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      copyAssistPrompt(PRIVACY_ASSIST_PROMPT, "공개 금지 정보")
+                    }
+                    className="h-10 rounded-full bg-white"
+                  >
+                    <Copy size={13} className="mr-1" />
+                    프롬프트 복사
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setPrivacyBoundaries(PRIVACY_BOUNDARY_EXAMPLE)
+                    }
+                    className="h-10 rounded-full bg-white"
+                  >
+                    예시 적용
+                  </Button>
                 </div>
               </div>
 
@@ -884,6 +1151,14 @@ export default function CloneSetup() {
                       <span className="text-muted-foreground">자기소개</span>
                       <p className="text-foreground font-medium mt-1 line-clamp-2">
                         {selfIntro}
+                      </p>
+                    </div>
+                  )}
+                  {socialLinks.length > 0 && (
+                    <div className="pt-1 border-t border-border">
+                      <span className="text-muted-foreground">SNS 링크</span>
+                      <p className="text-foreground font-medium mt-1 line-clamp-2">
+                        {socialLinks.map(link => link.platform).join(", ")}
                       </p>
                     </div>
                   )}

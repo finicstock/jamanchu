@@ -1,4 +1,14 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, uniqueIndex, json } from "drizzle-orm/mysql-core";
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  uniqueIndex,
+  json,
+  index,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -21,14 +31,16 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * 사용자 하트 잔액 테이블
  */
-export const userHearts = mysqlTable("user_hearts", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  balance: int("balance").notNull().default(0),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  uniqueIndex("user_hearts_userId_unique").on(table.userId),
-]);
+export const userHearts = mysqlTable(
+  "user_hearts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    balance: int("balance").notNull().default(0),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [uniqueIndex("user_hearts_userId_unique").on(table.userId)]
+);
 
 export type UserHeart = typeof userHearts.$inferSelect;
 
@@ -39,7 +51,14 @@ export const heartTransactions = mysqlTable("heart_transactions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   amount: int("amount").notNull(),
-  type: mysqlEnum("type", ["admin_grant", "purchase", "use_chat", "use_report", "use_photo", "refund"]).notNull(),
+  type: mysqlEnum("type", [
+    "admin_grant",
+    "purchase",
+    "use_chat",
+    "use_report",
+    "use_photo",
+    "refund",
+  ]).notNull(),
   description: text("description"),
   adminId: int("adminId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -51,23 +70,31 @@ export type HeartTransaction = typeof heartTransactions.$inferSelect;
  * AI 클론 프로필 테이블
  * 사용자가 생성한 AI 클론의 설정 정보
  */
-export const cloneProfiles = mysqlTable("clone_profiles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  nickname: varchar("nickname", { length: 50 }).notNull(),
-  gender: mysqlEnum("gender", ["male", "female", "other"]).notNull(),
-  interestedIn: mysqlEnum("interestedIn", ["male", "female", "both"]).notNull(),
-  age: int("age").notNull(),
-  personality: json("personality").$type<string[]>(), // 성격 특성 배열
-  interests: json("interests").$type<string[]>(), // 관심사 배열
-  values: text("values"), // 가치관 자유 텍스트
-  lifestyle: text("lifestyle"), // 라이프스타일 설명
-  status: mysqlEnum("status", ["active", "paused", "inactive"]).default("active").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  uniqueIndex("clone_profiles_userId_unique").on(table.userId),
-]);
+export const cloneProfiles = mysqlTable(
+  "clone_profiles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    nickname: varchar("nickname", { length: 50 }).notNull(),
+    gender: mysqlEnum("gender", ["male", "female", "other"]).notNull(),
+    interestedIn: mysqlEnum("interestedIn", [
+      "male",
+      "female",
+      "both",
+    ]).notNull(),
+    age: int("age").notNull(),
+    personality: json("personality").$type<string[]>(), // 성격 특성 배열
+    interests: json("interests").$type<string[]>(), // 관심사 배열
+    values: text("values"), // 가치관 자유 텍스트
+    lifestyle: text("lifestyle"), // 라이프스타일 설명
+    status: mysqlEnum("status", ["active", "paused", "inactive"])
+      .default("active")
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [uniqueIndex("clone_profiles_userId_unique").on(table.userId)]
+);
 
 export type CloneProfile = typeof cloneProfiles.$inferSelect;
 
@@ -79,8 +106,18 @@ export const cloneChats = mysqlTable("clone_chats", {
   id: int("id").autoincrement().primaryKey(),
   userAId: int("userAId").notNull(), // 클론 A의 소유자
   userBId: int("userBId").notNull(), // 클론 B의 소유자
-  status: mysqlEnum("status", ["in_progress", "completed", "failed"]).default("in_progress").notNull(),
-  messages: json("messages").$type<Array<{ role: string; displayName?: string; content: string; timestamp: number }>>(),
+  status: mysqlEnum("status", ["in_progress", "completed", "failed"])
+    .default("in_progress")
+    .notNull(),
+  messages:
+    json("messages").$type<
+      Array<{
+        role: string;
+        displayName?: string;
+        content: string;
+        timestamp: number;
+      }>
+    >(),
   totalMessages: int("totalMessages").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -99,13 +136,46 @@ export const chemistryReports = mysqlTable("chemistry_reports", {
   userBId: int("userBId").notNull(),
   overallScore: int("overallScore").notNull(), // 전체 호환성 점수 (0-100)
   scores: json("scores").$type<Array<{ label: string; score: number }>>(), // 항목별 점수
-  highlights: json("highlights").$type<Array<{ topic: string; insight: string; sentiment: string }>>(),
+  highlights:
+    json("highlights").$type<
+      Array<{ topic: string; insight: string; sentiment: string }>
+    >(),
   summary: text("summary"), // AI가 생성한 요약
-  status: mysqlEnum("status", ["completed", "failed", "pending"]).default("completed").notNull(),
+  status: mysqlEnum("status", ["completed", "failed", "pending"])
+    .default("completed")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type ChemistryReport = typeof chemistryReports.$inferSelect;
+
+export const safetyActions = mysqlTable(
+  "safety_actions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    reporterUserId: int("reporterUserId").notNull(),
+    targetUserId: int("targetUserId").notNull(),
+    chatId: int("chatId"),
+    action: mysqlEnum("action", [
+      "report",
+      "block",
+      "withdraw_consent",
+    ]).notNull(),
+    reason: varchar("reason", { length: 120 }),
+    note: text("note"),
+    status: mysqlEnum("status", ["open", "reviewed", "resolved"])
+      .default("open")
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("safety_actions_reporter_idx").on(table.reporterUserId),
+    index("safety_actions_target_idx").on(table.targetUserId),
+  ]
+);
+
+export type SafetyAction = typeof safetyActions.$inferSelect;
 
 /**
  * 알림 테이블
@@ -113,7 +183,13 @@ export type ChemistryReport = typeof chemistryReports.$inferSelect;
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  type: mysqlEnum("type", ["match_found", "report_ready", "heart_received", "chat_request", "system"]).notNull(),
+  type: mysqlEnum("type", [
+    "match_found",
+    "report_ready",
+    "heart_received",
+    "chat_request",
+    "system",
+  ]).notNull(),
   title: varchar("title", { length: 200 }).notNull(),
   message: text("message").notNull(),
   isRead: int("isRead").default(0).notNull(), // 0: unread, 1: read

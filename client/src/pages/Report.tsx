@@ -15,12 +15,16 @@ import {
   MessageSquare,
   Star,
   TrendingUp,
+  Ban,
+  ShieldAlert,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation, useRoute } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import LoginModal from "@/components/LoginModal";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 // ─── 타입 정의 ───
 type ScoreItem = { label: string; score: number };
@@ -44,16 +48,28 @@ function RadarChart({ scores }: { scores: ScoreItem[] }) {
     };
   };
 
-  const dataPoints = scores.map((s, i) => getPoint(i, (s.score / 100) * maxRadius));
-  const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+  const dataPoints = scores.map((s, i) =>
+    getPoint(i, (s.score / 100) * maxRadius)
+  );
+  const dataPath =
+    dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") +
+    " Z";
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[260px] mx-auto">
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      className="w-full max-w-[260px] mx-auto"
+    >
       {/* 배경 그리드 */}
       {Array.from({ length: levels }).map((_, level) => {
         const r = maxRadius * ((level + 1) / levels);
-        const points = Array.from({ length: count }).map((_, i) => getPoint(i, r));
-        const path = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+        const points = Array.from({ length: count }).map((_, i) =>
+          getPoint(i, r)
+        );
+        const path =
+          points
+            .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+            .join(" ") + " Z";
         return (
           <path
             key={level}
@@ -70,16 +86,38 @@ function RadarChart({ scores }: { scores: ScoreItem[] }) {
       {scores.map((_, i) => {
         const p = getPoint(i, maxRadius);
         return (
-          <line key={i} x1={center} y1={center} x2={p.x} y2={p.y} stroke="#E8E0D8" strokeWidth={0.5} opacity={0.5} />
+          <line
+            key={i}
+            x1={center}
+            y1={center}
+            x2={p.x}
+            y2={p.y}
+            stroke="#E8E0D8"
+            strokeWidth={0.5}
+            opacity={0.5}
+          />
         );
       })}
 
       {/* 데이터 영역 */}
-      <path d={dataPath} fill="rgba(232, 114, 92, 0.15)" stroke="#E8725C" strokeWidth={2} />
+      <path
+        d={dataPath}
+        fill="rgba(232, 114, 92, 0.15)"
+        stroke="#E8725C"
+        strokeWidth={2}
+      />
 
       {/* 데이터 포인트 */}
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={4} fill="#E8725C" stroke="white" strokeWidth={2} />
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r={4}
+          fill="#E8725C"
+          stroke="white"
+          strokeWidth={2}
+        />
       ))}
 
       {/* 라벨 */}
@@ -135,14 +173,21 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
 function ReportListView() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, loading } = useAuth();
-  const { data: reports, isLoading } = trpc.clone.getMyReports.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { data: reports, isLoading } = trpc.clone.getMyReports.useQuery(
+    undefined,
+    {
+      enabled: isAuthenticated,
+    }
+  );
 
   if (!loading && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoginModal isOpen={true} onClose={() => setLocation("/")} message="리포트를 확인하려면 로그인이 필요합니다." />
+        <LoginModal
+          isOpen={true}
+          onClose={() => setLocation("/")}
+          message="리포트를 확인하려면 로그인이 필요합니다."
+        />
       </div>
     );
   }
@@ -161,10 +206,16 @@ function ReportListView() {
         <div className="container py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-semibold text-foreground">케미스트리 리포트</h1>
-              <p className="text-[11px] text-muted-foreground">AI 클론이 분석한 호환성 보고서</p>
+              <h1 className="font-semibold text-foreground">
+                케미스트리 리포트
+              </h1>
+              <p className="text-[11px] text-muted-foreground">
+                AI 클론이 분석한 호환성 보고서
+              </p>
             </div>
-            <span className="text-xs text-muted-foreground">{reports?.length ?? 0}개의 리포트</span>
+            <span className="text-xs text-muted-foreground">
+              {reports?.length ?? 0}개의 리포트
+            </span>
           </div>
         </div>
       </header>
@@ -182,8 +233,14 @@ function ReportListView() {
                 className="w-full warm-card p-4 text-left hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#E8725C] to-[#FF9A76] flex items-center justify-center shrink-0">
-                    <span className="text-white text-sm font-bold">{report.overallScore}</span>
+                  <div
+                    className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${report.status === "failed" ? "bg-gray-100" : "bg-gradient-to-br from-[#E8725C] to-[#FF9A76]"}`}
+                  >
+                    <span
+                      className={`text-sm font-bold ${report.status === "failed" ? "text-gray-500" : "text-white"}`}
+                    >
+                      {report.status === "failed" ? "!" : report.overallScore}
+                    </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -195,19 +252,34 @@ function ReportListView() {
                           <Star
                             key={idx}
                             size={10}
-                            className={idx < Math.round(report.overallScore / 20) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}
+                            className={
+                              report.status !== "failed" &&
+                              idx < Math.round(report.overallScore / 20)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-200"
+                            }
                           />
                         ))}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                      {report.summary ?? "리포트 요약을 확인하세요"}
+                      {report.status === "failed"
+                        ? "리포트 생성 실패로 하트가 환불되었습니다."
+                        : (report.summary ?? "리포트 요약을 확인하세요")}
                     </p>
                     <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                      {report.createdAt ? new Date(report.createdAt).toLocaleDateString("ko-KR", { month: "long", day: "numeric" }) : ""}
+                      {report.createdAt
+                        ? new Date(report.createdAt).toLocaleDateString(
+                            "ko-KR",
+                            { month: "long", day: "numeric" }
+                          )
+                        : ""}
                     </p>
                   </div>
-                  <ChevronLeft size={16} className="text-muted-foreground rotate-180 shrink-0" />
+                  <ChevronLeft
+                    size={16}
+                    className="text-muted-foreground rotate-180 shrink-0"
+                  />
                 </div>
               </motion.button>
             ))}
@@ -223,7 +295,9 @@ function ReportListView() {
               <FileText size={28} className="text-warm-coral" />
             </div>
             <div className="space-y-2">
-              <h2 className="font-display text-lg font-bold text-foreground">아직 리포트가 없어요</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">
+                아직 리포트가 없어요
+              </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 AI 클론이 대화를 완료하면
                 <br />
@@ -252,10 +326,25 @@ function ReportListView() {
 function ReportDetailView({ reportId }: { reportId: number }) {
   const [, setLocation] = useLocation();
 
-  const { data: report, isLoading, error } = trpc.clone.getReportById.useQuery(
-    { reportId },
-    { retry: false }
-  );
+  const {
+    data: report,
+    isLoading,
+    error,
+  } = trpc.clone.getReportById.useQuery({ reportId }, { retry: false });
+  const safetyActionMutation = trpc.clone.submitSafetyAction.useMutation({
+    onSuccess: data => {
+      const label =
+        data.action === "report"
+          ? "신고"
+          : data.action === "block"
+            ? "차단"
+            : "동의 철회";
+      toast.success(`${label}이 접수되었습니다.`);
+    },
+    onError: err => {
+      toast.error("안전 조치 실패", { description: err.message });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -277,15 +366,23 @@ function ReportDetailView({ reportId }: { reportId: number }) {
               >
                 <ChevronLeft size={18} className="text-foreground" />
               </button>
-              <h1 className="font-semibold text-foreground">케미스트리 리포트</h1>
+              <h1 className="font-semibold text-foreground">
+                케미스트리 리포트
+              </h1>
             </div>
           </div>
         </header>
         <div className="container py-12">
           <div className="warm-card p-8 text-center space-y-3">
             <AlertCircle size={32} className="mx-auto text-red-400" />
-            <p className="text-sm text-muted-foreground">{error?.message ?? "리포트를 불러올 수 없습니다."}</p>
-            <Button onClick={() => setLocation("/report")} variant="outline" className="rounded-full">
+            <p className="text-sm text-muted-foreground">
+              {error?.message ?? "리포트를 불러올 수 없습니다."}
+            </p>
+            <Button
+              onClick={() => setLocation("/report")}
+              variant="outline"
+              className="rounded-full"
+            >
               목록으로 돌아가기
             </Button>
           </div>
@@ -303,13 +400,39 @@ function ReportDetailView({ reportId }: { reportId: number }) {
     : [];
 
   const getScoreLabel = (score: number) => {
-    if (score >= 85) return { text: "환상의 케미", color: "text-red-500", bg: "bg-red-50" };
-    if (score >= 70) return { text: "좋은 케미", color: "text-orange-500", bg: "bg-orange-50" };
-    if (score >= 55) return { text: "보통 케미", color: "text-yellow-600", bg: "bg-yellow-50" };
+    if (score >= 85)
+      return { text: "환상의 케미", color: "text-red-500", bg: "bg-red-50" };
+    if (score >= 70)
+      return {
+        text: "좋은 케미",
+        color: "text-orange-500",
+        bg: "bg-orange-50",
+      };
+    if (score >= 55)
+      return {
+        text: "보통 케미",
+        color: "text-yellow-600",
+        bg: "bg-yellow-50",
+      };
     return { text: "아쉬운 케미", color: "text-gray-500", bg: "bg-gray-50" };
   };
 
-  const label = getScoreLabel(report.overallScore);
+  const reportFailed = report.status === "failed";
+  const label = reportFailed
+    ? { text: "생성 실패", color: "text-gray-500", bg: "bg-gray-50" }
+    : getScoreLabel(report.overallScore);
+
+  const handleSafetyAction = (
+    action: "report" | "block" | "withdraw_consent",
+    reason: string
+  ) => {
+    safetyActionMutation.mutate({
+      targetUserId: report.partnerUserId,
+      chatId: report.chatId,
+      action,
+      reason,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -328,9 +451,13 @@ function ReportDetailView({ reportId }: { reportId: number }) {
                 {report.partnerNickname}님과의 리포트
               </p>
               <p className="text-[10px] text-muted-foreground">
-                {report.createdAt ? new Date(report.createdAt).toLocaleDateString("ko-KR", {
-                  year: "numeric", month: "long", day: "numeric"
-                }) : ""}
+                {report.createdAt
+                  ? new Date(report.createdAt).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })
+                  : ""}
               </p>
             </div>
             <Button
@@ -355,11 +482,19 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           className="warm-card p-6 text-center space-y-4"
         >
           <div className="relative inline-block">
-            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-[#E8725C] to-[#FF9A76] flex items-center justify-center mx-auto shadow-lg">
-              <span className="text-white text-3xl font-bold">{report.overallScore}</span>
+            <div
+              className={`h-24 w-24 rounded-full flex items-center justify-center mx-auto shadow-lg ${reportFailed ? "bg-gray-100" : "bg-gradient-to-br from-[#E8725C] to-[#FF9A76]"}`}
+            >
+              <span
+                className={`text-3xl font-bold ${reportFailed ? "text-gray-500" : "text-white"}`}
+              >
+                {reportFailed ? "!" : report.overallScore}
+              </span>
             </div>
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${label.color} ${label.bg}`}>
+              <span
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${label.color} ${label.bg}`}
+              >
                 {label.text}
               </span>
             </div>
@@ -367,7 +502,12 @@ function ReportDetailView({ reportId }: { reportId: number }) {
 
           <div className="pt-2">
             <h2 className="font-display text-lg font-bold text-foreground">
-              {report.myNickname} <Heart size={16} className="inline text-warm-coral fill-warm-coral mx-1" /> {report.partnerNickname}
+              {report.myNickname}{" "}
+              <Heart
+                size={16}
+                className="inline text-warm-coral fill-warm-coral mx-1"
+              />{" "}
+              {report.partnerNickname}
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
               {report.totalMessages}개의 대화를 기반으로 분석되었습니다
@@ -379,14 +519,28 @@ function ReportDetailView({ reportId }: { reportId: number }) {
               <Star
                 key={idx}
                 size={18}
-                className={idx < Math.round(report.overallScore / 20) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}
+                className={
+                  !reportFailed && idx < Math.round(report.overallScore / 20)
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-200"
+                }
               />
             ))}
           </div>
         </motion.div>
 
+        {reportFailed && (
+          <div className="warm-card p-4 flex items-start gap-3">
+            <AlertCircle size={18} className="text-gray-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              리포트 생성에 실패해 사용한 하트가 환불되었습니다. 대화 기록은
+              남아 있으니 잠시 후 다시 시도해주세요.
+            </p>
+          </div>
+        )}
+
         {/* 레이더 차트 */}
-        {scores.length > 0 && (
+        {!reportFailed && scores.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -395,7 +549,9 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           >
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-warm-coral" />
-              <h3 className="text-sm font-semibold text-foreground">호환성 분석</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                호환성 분석
+              </h3>
             </div>
             <RadarChart scores={scores} />
           </motion.div>
@@ -411,7 +567,9 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           >
             <div className="flex items-center gap-2">
               <Star size={16} className="text-warm-coral" />
-              <h3 className="text-sm font-semibold text-foreground">항목별 점수</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                항목별 점수
+              </h3>
             </div>
             <div className="space-y-3">
               {scores.map((s, i) => (
@@ -438,7 +596,9 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           >
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-warm-coral" />
-              <h3 className="text-sm font-semibold text-foreground">AI 분석 요약</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                AI 분석 요약
+              </h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {report.summary}
@@ -456,7 +616,9 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           >
             <div className="flex items-center gap-2">
               <Heart size={16} className="text-warm-coral" />
-              <h3 className="text-sm font-semibold text-foreground">대화 하이라이트</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                대화 하이라이트
+              </h3>
             </div>
             <div className="space-y-2.5">
               {highlights.map((h, i) => (
@@ -468,17 +630,31 @@ function ReportDetailView({ reportId }: { reportId: number }) {
                   className="flex items-start gap-2.5 p-3 rounded-xl bg-warm-light/50"
                 >
                   <div className="h-5 w-5 rounded-full bg-warm-coral/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-bold text-warm-coral">{i + 1}</span>
+                    <span className="text-[10px] font-bold text-warm-coral">
+                      {i + 1}
+                    </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-foreground">{h.topic}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">{h.insight}</p>
-                    <span className={`text-[10px] mt-1 inline-block px-2 py-0.5 rounded-full ${
-                      h.sentiment === 'positive' ? 'bg-green-50 text-green-600' :
-                      h.sentiment === 'negative' ? 'bg-red-50 text-red-600' :
-                      'bg-gray-50 text-gray-500'
-                    }`}>
-                      {h.sentiment === 'positive' ? '긍정적' : h.sentiment === 'negative' ? '부정적' : '중립'}
+                    <p className="text-xs font-semibold text-foreground">
+                      {h.topic}
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                      {h.insight}
+                    </p>
+                    <span
+                      className={`text-[10px] mt-1 inline-block px-2 py-0.5 rounded-full ${
+                        h.sentiment === "positive"
+                          ? "bg-green-50 text-green-600"
+                          : h.sentiment === "negative"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-gray-50 text-gray-500"
+                      }`}
+                    >
+                      {h.sentiment === "positive"
+                        ? "긍정적"
+                        : h.sentiment === "negative"
+                          ? "부정적"
+                          : "중립"}
                     </span>
                   </div>
                 </motion.div>
@@ -487,6 +663,51 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           </motion.div>
         )}
 
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45, duration: 0.5 }}
+          className="warm-card p-4 space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <ShieldAlert size={16} className="text-sage" />
+            <h3 className="text-sm font-semibold text-foreground">안전 조치</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant="outline"
+              className="rounded-full bg-white px-2 text-xs"
+              disabled={safetyActionMutation.isPending}
+              onClick={() =>
+                handleSafetyAction("report", "부적절한 대화 또는 프로필")
+              }
+            >
+              <ShieldAlert size={13} className="mr-1" />
+              신고
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full bg-white px-2 text-xs"
+              disabled={safetyActionMutation.isPending}
+              onClick={() => handleSafetyAction("block", "다시 매칭 제외")}
+            >
+              <Ban size={13} className="mr-1" />
+              차단
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-full bg-white px-2 text-xs"
+              disabled={safetyActionMutation.isPending}
+              onClick={() =>
+                handleSafetyAction("withdraw_consent", "후속 진행 동의 철회")
+              }
+            >
+              <RotateCcw size={13} className="mr-1" />
+              동의 철회
+            </Button>
+          </div>
+        </motion.div>
+
         {/* 대화 보기 CTA */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -494,7 +715,9 @@ function ReportDetailView({ reportId }: { reportId: number }) {
           transition={{ delay: 0.5, duration: 0.5 }}
           className="warm-card p-5 text-center space-y-3"
         >
-          <p className="text-sm text-muted-foreground">이 리포트의 원본 대화가 궁금하신가요?</p>
+          <p className="text-sm text-muted-foreground">
+            이 리포트의 원본 대화가 궁금하신가요?
+          </p>
           <Button
             onClick={() => setLocation(`/chat-log/${report.chatId}`)}
             className="bg-warm-coral hover:bg-warm-coral/90 text-white rounded-full px-6"
