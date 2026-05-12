@@ -213,7 +213,7 @@ export default function Home() {
                 }}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-warm-coral animate-gentle-pulse" />
-                건실한 만남을 위한 AI 매칭
+                카톡/SNS 기반 AI 매칭
               </span>
             </motion.div>
 
@@ -245,7 +245,7 @@ export default function Home() {
                 textShadow: "0 1px 6px rgba(255,255,255,0.7)",
               }}
             >
-              AI 클론이 먼저 궁합을 탐색하고, 사람끼리 대화할 만한 이유를
+              카카오톡 대화와 공개 SNS를 바탕으로 AI 클론이 먼저 궁합의 단서를
               찾아줍니다.
             </motion.p>
 
@@ -258,7 +258,7 @@ export default function Home() {
                 onClick={() => setLocation("/match-test")}
                 className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
               >
-                매칭률 테스트
+                AI 매칭률 테스트
                 <ArrowRight size={16} className="ml-2" />
               </Button>
               <Button
