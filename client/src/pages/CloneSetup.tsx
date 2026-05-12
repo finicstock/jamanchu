@@ -44,6 +44,8 @@ const INTERESTS = [
 export default function CloneSetup() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedPref, setSelectedPref] = useState<string | null>(null);
   const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -107,11 +109,7 @@ export default function CloneSetup() {
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {isDone ? (
-                    <Check size={14} />
-                  ) : (
-                    <Icon size={14} />
-                  )}
+                  {isDone ? <Check size={14} /> : <Icon size={14} />}
                 </div>
                 <span
                   className={`text-[9px] font-medium ${
@@ -164,28 +162,46 @@ export default function CloneSetup() {
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-foreground">성별</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {["남성", "여성", "기타"].map((gender) => (
-                      <button
-                        key={gender}
-                        className="h-12 border border-border rounded-xl text-muted-foreground hover:border-warm-coral hover:text-warm-coral hover:bg-warm-coral-light/50 transition-all text-sm font-medium"
-                      >
-                        {gender}
-                      </button>
-                    ))}
+                    {["남성", "여성", "기타"].map((gender) => {
+                      const isSelected = selectedGender === gender;
+                      return (
+                        <button
+                          key={gender}
+                          onClick={() => setSelectedGender(gender)}
+                          className={`h-12 rounded-xl text-sm font-medium transition-all border-2 ${
+                            isSelected
+                              ? "border-warm-coral bg-warm-coral text-white shadow-md shadow-warm-coral/20"
+                              : "border-border bg-white text-muted-foreground hover:border-warm-coral/40 hover:text-warm-coral"
+                          }`}
+                        >
+                          {isSelected && <Check size={14} className="inline mr-1" />}
+                          {gender}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-medium text-foreground">관심 성별</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {["남성", "여성", "모두"].map((pref) => (
-                      <button
-                        key={pref}
-                        className="h-12 border border-border rounded-xl text-muted-foreground hover:border-sage hover:text-sage hover:bg-sage-light/50 transition-all text-sm font-medium"
-                      >
-                        {pref}
-                      </button>
-                    ))}
+                    {["남성", "여성", "모두"].map((pref) => {
+                      const isSelected = selectedPref === pref;
+                      return (
+                        <button
+                          key={pref}
+                          onClick={() => setSelectedPref(pref)}
+                          className={`h-12 rounded-xl text-sm font-medium transition-all border-2 ${
+                            isSelected
+                              ? "border-sage bg-sage text-white shadow-md shadow-sage/20"
+                              : "border-border bg-white text-muted-foreground hover:border-sage/40 hover:text-sage"
+                          }`}
+                        >
+                          {isSelected && <Check size={14} className="inline mr-1" />}
+                          {pref}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -270,6 +286,7 @@ export default function CloneSetup() {
                           : "bg-white border border-border text-muted-foreground hover:border-warm-coral/40 hover:text-warm-coral"
                       }`}
                     >
+                      {isSelected && <Check size={12} className="inline mr-1" />}
                       {trait}
                     </button>
                   );
@@ -297,6 +314,7 @@ export default function CloneSetup() {
                           : "bg-white border border-border text-muted-foreground hover:border-sage/40 hover:text-sage"
                       }`}
                     >
+                      {isSelected && <Check size={12} className="inline mr-1" />}
                       {interest}
                     </button>
                   );
@@ -341,6 +359,18 @@ export default function CloneSetup() {
               <div className="warm-card p-4 space-y-3">
                 <h3 className="font-semibold text-foreground text-sm">클론 요약</h3>
                 <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">성별</span>
+                    <span className="text-foreground font-medium">
+                      {selectedGender || "미설정"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">관심 성별</span>
+                    <span className="text-foreground font-medium">
+                      {selectedPref || "미설정"}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">성격</span>
                     <span className="text-foreground font-medium">
