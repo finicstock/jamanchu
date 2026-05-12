@@ -3,7 +3,7 @@
  * Design: Warm Afternoon Conversation - 건실한 만남
  * 실제 tRPC saveProfile 연동
  */
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import MobileNav from "@/components/MobileNav";
@@ -21,6 +21,7 @@ import {
   AlertCircle,
   FileText,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -38,28 +39,141 @@ const STEPS = [
 ];
 
 const PERSONALITY_TRAITS = [
-  "유머러스", "진지함", "모험적", "차분함", "열정적",
-  "지적", "감성적", "현실적", "낙관적", "신중함",
-  "외향적", "내향적", "창의적", "분석적", "따뜻함",
+  "유머러스",
+  "진지함",
+  "모험적",
+  "차분함",
+  "열정적",
+  "지적",
+  "감성적",
+  "현실적",
+  "낙관적",
+  "신중함",
+  "외향적",
+  "내향적",
+  "창의적",
+  "분석적",
+  "따뜻함",
 ];
 
 const INTERESTS = [
-  "여행", "음악", "영화", "독서", "요리",
-  "운동", "카페", "사진", "반려동물", "게임",
-  "미술", "와인", "등산", "캠핑", "테크",
+  "여행",
+  "음악",
+  "영화",
+  "독서",
+  "요리",
+  "운동",
+  "카페",
+  "사진",
+  "반려동물",
+  "게임",
+  "미술",
+  "와인",
+  "등산",
+  "캠핑",
+  "테크",
 ];
 
 const GENDER_MAP: Record<string, "male" | "female" | "other"> = {
-  "남성": "male",
-  "여성": "female",
-  "기타": "other",
+  남성: "male",
+  여성: "female",
+  기타: "other",
 };
 
 const PREF_MAP: Record<string, "male" | "female" | "both"> = {
-  "남성": "male",
-  "여성": "female",
-  "모두": "both",
+  남성: "male",
+  여성: "female",
+  모두: "both",
 };
+
+type ContextFile = {
+  id: string;
+  name: string;
+  size: number;
+  kind: "kakao" | "text";
+  summary: string;
+  excerpt: string;
+  charCount: number;
+};
+
+const MAX_CONTEXT_FILES = 5;
+const MAX_CONTEXT_FILE_BYTES = 512 * 1024;
+const MAX_CONTEXT_CHARS_PER_FILE = 5000;
+const MAX_TOTAL_CONTEXT_CHARS = 12000;
+const SUPPORTED_CONTEXT_EXTENSIONS = [".txt", ".md", ".json", ".csv"];
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function isSupportedContextFile(file: File) {
+  const lowerName = file.name.toLowerCase();
+  return SUPPORTED_CONTEXT_EXTENSIONS.some(ext => lowerName.endsWith(ext));
+}
+
+function redactSensitiveText(text: string) {
+  return text
+    .replace(/010[-.\s]?\d{4}[-.\s]?\d{4}/g, "[연락처]")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[이메일]");
+}
+
+function parseKakaoLine(line: string) {
+  const bracketMatch = line.match(/^\[([^\]]{1,40})\]\s*\[[^\]]+\]\s*(.+)$/);
+  if (bracketMatch) {
+    return { speaker: bracketMatch[1].trim(), message: bracketMatch[2].trim() };
+  }
+
+  const commaMatch = line.match(/^\d{4}\..*?,\s*([^:]{1,40})\s*:\s*(.+)$/);
+  if (commaMatch) {
+    return { speaker: commaMatch[1].trim(), message: commaMatch[2].trim() };
+  }
+
+  return null;
+}
+
+function summarizeContextFile(
+  fileName: string,
+  rawText: string
+): Omit<ContextFile, "id" | "name" | "size"> {
+  const normalized = redactSensitiveText(rawText)
+    .replace(/\r\n/g, "\n")
+    .replace(/\u0000/g, "")
+    .trim();
+  const lines = normalized
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+  const speakerAliases = new Map<string, string>();
+  const kakaoMessages: string[] = [];
+
+  for (const line of lines) {
+    const parsed = parseKakaoLine(line);
+    if (!parsed) continue;
+
+    if (!speakerAliases.has(parsed.speaker)) {
+      speakerAliases.set(parsed.speaker, `화자${speakerAliases.size + 1}`);
+    }
+    kakaoMessages.push(
+      `${speakerAliases.get(parsed.speaker)}: ${parsed.message}`
+    );
+  }
+
+  const isKakao = kakaoMessages.length >= 5;
+  const excerptSource = isKakao ? kakaoMessages : lines;
+  const excerpt = excerptSource.join("\n").slice(0, MAX_CONTEXT_CHARS_PER_FILE);
+  const summary = isKakao
+    ? `카카오톡 대화로 보이는 파일입니다. 메시지 ${kakaoMessages.length}개, 화자 ${speakerAliases.size}명, 원문 이름은 익명화했습니다.`
+    : `텍스트 컨텍스트 파일입니다. ${lines.length}줄, ${normalized.length}자를 클론 학습 참고용으로 읽었습니다.`;
+
+  return {
+    kind: isKakao ? "kakao" : "text",
+    summary: `${fileName}: ${summary}`,
+    excerpt,
+    charCount: normalized.length,
+  };
+}
 
 export default function CloneSetup() {
   const [, setLocation] = useLocation();
@@ -74,6 +188,7 @@ export default function CloneSetup() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selfIntro, setSelfIntro] = useState("");
   const [privacyBoundaries, setPrivacyBoundaries] = useState("");
+  const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
   const [acceptedAiConsent, setAcceptedAiConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -86,7 +201,7 @@ export default function CloneSetup() {
       });
       setLocation("/dashboard");
     },
-    onError: (err) => {
+    onError: err => {
       setIsGenerating(false);
       toast.error("클론 생성에 실패했습니다.", {
         description: err.message,
@@ -95,9 +210,9 @@ export default function CloneSetup() {
   });
 
   const toggleTrait = (trait: string) => {
-    setSelectedTraits((prev) =>
+    setSelectedTraits(prev =>
       prev.includes(trait)
-        ? prev.filter((t) => t !== trait)
+        ? prev.filter(t => t !== trait)
         : prev.length < 5
           ? [...prev, trait]
           : prev
@@ -105,9 +220,9 @@ export default function CloneSetup() {
   };
 
   const toggleInterest = (interest: string) => {
-    setSelectedInterests((prev) =>
+    setSelectedInterests(prev =>
       prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
+        ? prev.filter(i => i !== interest)
         : prev.length < 7
           ? [...prev, interest]
           : prev
@@ -154,6 +269,79 @@ export default function CloneSetup() {
     }
   };
 
+  const handleContextFileUpload = async (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (selectedFiles.length === 0) return;
+
+    const remainingSlots = MAX_CONTEXT_FILES - contextFiles.length;
+    if (remainingSlots <= 0) {
+      toast.error(
+        `컨텍스트 파일은 최대 ${MAX_CONTEXT_FILES}개까지 추가할 수 있습니다.`
+      );
+      return;
+    }
+
+    const filesToRead = selectedFiles.slice(0, remainingSlots);
+    const nextFiles: ContextFile[] = [];
+
+    for (const file of filesToRead) {
+      if (!isSupportedContextFile(file)) {
+        toast.error(`${file.name}은 지원하지 않는 파일 형식입니다.`);
+        continue;
+      }
+      if (file.size > MAX_CONTEXT_FILE_BYTES) {
+        toast.error(
+          `${file.name}은 ${formatFileSize(MAX_CONTEXT_FILE_BYTES)} 이하로 업로드해주세요.`
+        );
+        continue;
+      }
+
+      try {
+        const text = await file.text();
+        if (!text.trim()) {
+          toast.error(`${file.name}에 읽을 수 있는 텍스트가 없습니다.`);
+          continue;
+        }
+        nextFiles.push({
+          id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+          name: file.name,
+          size: file.size,
+          ...summarizeContextFile(file.name, text),
+        });
+      } catch {
+        toast.error(`${file.name}을 읽지 못했습니다.`);
+      }
+    }
+
+    if (nextFiles.length > 0) {
+      setContextFiles(prev => [...prev, ...nextFiles]);
+      toast.success(`${nextFiles.length}개 파일을 컨텍스트에 추가했습니다.`);
+    }
+  };
+
+  const removeContextFile = (id: string) => {
+    setContextFiles(prev => prev.filter(file => file.id !== id));
+  };
+
+  const buildUploadedContext = () => {
+    const joined = contextFiles
+      .map(file =>
+        [
+          `[${file.kind === "kakao" ? "카카오톡 대화" : "텍스트 자료"}] ${file.name}`,
+          file.summary,
+          file.excerpt ? `발췌:\n${file.excerpt}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n")
+      )
+      .join("\n\n");
+
+    return joined.slice(0, MAX_TOTAL_CONTEXT_CHARS);
+  };
+
   const handleGenerate = () => {
     if (!selectedGender || !selectedPref) {
       toast.error("기본 정보를 모두 입력해주세요.");
@@ -166,6 +354,13 @@ export default function CloneSetup() {
     const lifestyleNotes = privacyBoundaries.trim()
       ? `공개 금지/주의 정보: ${privacyBoundaries.trim()}`
       : undefined;
+    const uploadedContext = buildUploadedContext();
+    const profileValues = [
+      selfIntro.trim(),
+      uploadedContext ? `업로드 컨텍스트:\n${uploadedContext}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
     setIsGenerating(true);
     saveProfileMutation.mutate({
       nickname: nickname.trim(),
@@ -174,7 +369,7 @@ export default function CloneSetup() {
       age: parseInt(age),
       personality: selectedTraits,
       interests: selectedInterests,
-      values: selfIntro.trim() || undefined,
+      values: profileValues || undefined,
       lifestyle: lifestyleNotes,
     });
   };
@@ -203,20 +398,19 @@ export default function CloneSetup() {
             >
               <ChevronLeft size={20} />
             </button>
-            <h1 className="font-display font-bold text-foreground">클론 만들기</h1>
+            <h1 className="font-display font-bold text-foreground">
+              클론 만들기
+            </h1>
             <span className="text-xs text-muted-foreground">{step}/4</span>
           </div>
-          <Progress
-            value={(step / 4) * 100}
-            className="mt-2 h-1.5 bg-muted"
-          />
+          <Progress value={(step / 4) * 100} className="mt-2 h-1.5 bg-muted" />
         </div>
       </header>
 
       {/* Step Indicator */}
       <div className="container py-4">
         <div className="flex items-center justify-between">
-          {STEPS.map((s) => (
+          {STEPS.map(s => (
             <div key={s.id} className="flex flex-col items-center gap-1">
               <div
                 className={`h-10 w-10 rounded-full flex items-center justify-center transition-all ${
@@ -227,11 +421,7 @@ export default function CloneSetup() {
                       : "bg-muted text-muted-foreground"
                 }`}
               >
-                {s.id < step ? (
-                  <Check size={16} />
-                ) : (
-                  <s.icon size={16} />
-                )}
+                {s.id < step ? <Check size={16} /> : <s.icon size={16} />}
               </div>
               <span
                 className={`text-[10px] font-medium ${
@@ -286,7 +476,7 @@ export default function CloneSetup() {
                   <input
                     type="text"
                     value={nickname}
-                    onChange={(e) => {
+                    onChange={e => {
                       setNickname(e.target.value);
                       setValidationError(null);
                     }}
@@ -302,7 +492,7 @@ export default function CloneSetup() {
                   <input
                     type="number"
                     value={age}
-                    onChange={(e) => {
+                    onChange={e => {
                       setAge(e.target.value);
                       setValidationError(null);
                     }}
@@ -317,7 +507,7 @@ export default function CloneSetup() {
                     성별 <span className="text-red-400">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {["남성", "여성", "기타"].map((gender) => {
+                    {["남성", "여성", "기타"].map(gender => {
                       const isSelected = selectedGender === gender;
                       return (
                         <button
@@ -346,7 +536,7 @@ export default function CloneSetup() {
                     관심 성별 <span className="text-red-400">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {["남성", "여성", "모두"].map((pref) => {
+                    {["남성", "여성", "모두"].map(pref => {
                       const isSelected = selectedPref === pref;
                       return (
                         <button
@@ -387,7 +577,8 @@ export default function CloneSetup() {
                   자기소개
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  AI 클론이 당신을 더 잘 이해할 수 있도록 자기소개를 작성해주세요.
+                  AI 클론이 당신을 더 잘 이해할 수 있도록 자기소개를
+                  작성해주세요.
                 </p>
               </div>
 
@@ -399,7 +590,7 @@ export default function CloneSetup() {
                 </label>
                 <textarea
                   value={selfIntro}
-                  onChange={(e) => setSelfIntro(e.target.value)}
+                  onChange={e => setSelfIntro(e.target.value)}
                   placeholder="자유롭게 자신을 소개해주세요. 예: 저는 여행을 좋아하고, 주말에는 카페에서 책을 읽는 걸 즐깁니다. 유머 감각이 좋은 사람을 좋아하고, 서로 존중하는 관계를 추구합니다."
                   maxLength={1000}
                   rows={6}
@@ -415,6 +606,75 @@ export default function CloneSetup() {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                    <Upload size={12} className="text-sage" />
+                    컨텍스트 파일
+                  </label>
+                  <span className="text-[10px] text-muted-foreground">
+                    {contextFiles.length}/{MAX_CONTEXT_FILES}
+                  </span>
+                </div>
+                <label className="flex min-h-[112px] cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-sage/40 bg-sage-light/20 px-4 py-5 text-center transition-colors hover:border-sage hover:bg-sage-light/40">
+                  <Upload size={22} className="text-sage" />
+                  <span className="text-sm font-semibold text-foreground">
+                    txt, md, json, csv 업로드
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    카카오톡 대화 txt와 클론 참고 자료를 추가할 수 있습니다
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".txt,.md,.json,.csv,text/plain,application/json,text/markdown,text/csv"
+                    onChange={handleContextFileUpload}
+                    className="hidden"
+                  />
+                </label>
+                {contextFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {contextFiles.map(file => (
+                      <div
+                        key={file.id}
+                        className="rounded-xl border border-border bg-white p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <FileText
+                                size={14}
+                                className="shrink-0 text-sage"
+                              />
+                              <p className="truncate text-sm font-semibold text-foreground">
+                                {file.name}
+                              </p>
+                            </div>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {file.kind === "kakao"
+                                ? "카카오톡 대화"
+                                : "텍스트 자료"}{" "}
+                              · {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeContextFile(file.id)}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            aria-label={`${file.name} 제거`}
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          {file.summary}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
                   <ShieldCheck size={12} className="text-sage" />
@@ -422,7 +682,7 @@ export default function CloneSetup() {
                 </label>
                 <textarea
                   value={privacyBoundaries}
-                  onChange={(e) => setPrivacyBoundaries(e.target.value)}
+                  onChange={e => setPrivacyBoundaries(e.target.value)}
                   placeholder="예: 직장명, 연락처, 가족 정보, 과거 연애사처럼 AI 클론이 대화에서 언급하지 않았으면 하는 내용을 적어주세요."
                   maxLength={500}
                   rows={4}
@@ -488,7 +748,7 @@ export default function CloneSetup() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {PERSONALITY_TRAITS.map((trait) => {
+                {PERSONALITY_TRAITS.map(trait => {
                   const isSelected = selectedTraits.includes(trait);
                   return (
                     <button
@@ -518,7 +778,7 @@ export default function CloneSetup() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {INTERESTS.map((interest) => {
+                {INTERESTS.map(interest => {
                   const isSelected = selectedInterests.includes(interest);
                   return (
                     <button
@@ -627,9 +887,21 @@ export default function CloneSetup() {
                       </p>
                     </div>
                   )}
+                  {contextFiles.length > 0 && (
+                    <div className="pt-1 border-t border-border">
+                      <span className="text-muted-foreground">
+                        업로드 컨텍스트
+                      </span>
+                      <p className="text-foreground font-medium mt-1 line-clamp-2">
+                        {contextFiles.map(file => file.name).join(", ")}
+                      </p>
+                    </div>
+                  )}
                   {privacyBoundaries && (
                     <div className="pt-1 border-t border-border">
-                      <span className="text-muted-foreground">공개 금지/주의 정보</span>
+                      <span className="text-muted-foreground">
+                        공개 금지/주의 정보
+                      </span>
                       <p className="text-foreground font-medium mt-1 line-clamp-2">
                         {privacyBoundaries}
                       </p>
@@ -640,7 +912,7 @@ export default function CloneSetup() {
 
               <button
                 type="button"
-                onClick={() => setAcceptedAiConsent((value) => !value)}
+                onClick={() => setAcceptedAiConsent(value => !value)}
                 className={`w-full warm-card p-4 flex items-start gap-3 text-left transition-all ${
                   acceptedAiConsent ? "border-sage bg-sage-light/30" : ""
                 }`}
@@ -683,7 +955,11 @@ export default function CloneSetup() {
           ) : (
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || saveProfileMutation.isPending || !acceptedAiConsent}
+              disabled={
+                isGenerating ||
+                saveProfileMutation.isPending ||
+                !acceptedAiConsent
+              }
               className="w-full h-13 gradient-sage text-white font-semibold text-base rounded-full shadow-lg shadow-sage/20 disabled:opacity-60"
             >
               {isGenerating ? (
