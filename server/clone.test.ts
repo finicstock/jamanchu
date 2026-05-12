@@ -34,11 +34,20 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("../drizzle/schema", () => ({
   cloneProfiles: { userId: "userId", status: "status" },
-  cloneChats: { userAId: "userAId", userBId: "userBId", createdAt: "createdAt" },
+  cloneChats: {
+    id: "id",
+    userAId: "userAId",
+    userBId: "userBId",
+    createdAt: "createdAt",
+  },
   chemistryReports: { chatId: "chatId" },
   notifications: {},
   userHearts: { userId: "userId", balance: "balance" },
   heartTransactions: {},
+  safetyActions: {
+    reporterUserId: "reporterUserId",
+    targetUserId: "targetUserId",
+  },
 }));
 
 describe("clone.saveProfile", () => {
@@ -80,7 +89,9 @@ describe("clone.saveProfile", () => {
     expect(() => schema.parse({ ...validInput, gender: "unknown" })).toThrow();
 
     // Invalid: wrong interestedIn
-    expect(() => schema.parse({ ...validInput, interestedIn: "none" })).toThrow();
+    expect(() =>
+      schema.parse({ ...validInput, interestedIn: "none" })
+    ).toThrow();
   });
 
   it("should accept valid gender and interestedIn values", () => {
@@ -99,7 +110,7 @@ describe("clone.startChat", () => {
   it("should require clone profile before starting chat", async () => {
     // When no clone profile exists, startChat should throw
     mockDb.limit.mockResolvedValueOnce([]); // no clone profile
-    
+
     // This simulates the check in startChat
     const myClone: unknown[] = [];
     expect(myClone.length).toBe(0);
@@ -128,10 +139,15 @@ describe("clone.startChat", () => {
       { userId: 1, gender: "male", interestedIn: "female", status: "active" }, // self
     ];
 
-    const filtered = candidates.filter((c) => {
+    const filtered = candidates.filter(c => {
       if (c.userId === myProfile.userId) return false;
-      if (myProfile.interestedIn !== "both" && c.gender !== myProfile.interestedIn) return false;
-      if (c.interestedIn !== "both" && myProfile.gender !== c.interestedIn) return false;
+      if (
+        myProfile.interestedIn !== "both" &&
+        c.gender !== myProfile.interestedIn
+      )
+        return false;
+      if (c.interestedIn !== "both" && myProfile.gender !== c.interestedIn)
+        return false;
       return true;
     });
 
@@ -146,10 +162,15 @@ describe("clone.startChat", () => {
       { userId: 3, gender: "male", interestedIn: "both", status: "active" },
     ];
 
-    const filtered = candidates.filter((c) => {
+    const filtered = candidates.filter(c => {
       if (c.userId === myProfile.userId) return false;
-      if (myProfile.interestedIn !== "both" && c.gender !== myProfile.interestedIn) return false;
-      if (c.interestedIn !== "both" && myProfile.gender !== c.interestedIn) return false;
+      if (
+        myProfile.interestedIn !== "both" &&
+        c.gender !== myProfile.interestedIn
+      )
+        return false;
+      if (c.interestedIn !== "both" && myProfile.gender !== c.interestedIn)
+        return false;
       return true;
     });
 

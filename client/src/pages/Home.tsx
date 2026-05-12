@@ -7,14 +7,31 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User, Settings, Bell } from "lucide-react";
+import {
+  Heart,
+  MessageSquare,
+  FileText,
+  Shield,
+  Sparkles,
+  ArrowRight,
+  LogIn,
+  LogOut,
+  User,
+  Settings,
+  Bell,
+  Upload,
+  Link as LinkIcon,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
-const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/hero-warm-UchKCieCyinfad4qZVoK5c.webp";
-const CLONE_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/clone-activity-warm-hhH8j4eLwaWyKQMeaVmVGy.webp";
-const MATCH_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/match-warm-cZheKiyUqyEmwcHQVHfan9.webp";
+const HERO_IMG =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/hero-warm-UchKCieCyinfad4qZVoK5c.webp";
+const CLONE_IMG =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/clone-activity-warm-hhH8j4eLwaWyKQMeaVmVGy.webp";
+const MATCH_IMG =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/match-warm-cZheKiyUqyEmwcHQVHfan9.webp";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -29,7 +46,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: "AI 클론 생성",
-    desc: "내 성격과 가치관을 바탕으로 사전 궁합 탐색용 클론을 만듭니다",
+    desc: "자기소개, 파일, SNS 링크로 사전 궁합 탐색용 클론을 만듭니다",
     color: "bg-warm-coral-light text-warm-coral",
   },
   {
@@ -92,12 +109,16 @@ export default function Home() {
       {/* Top Auth Bar */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
         <div className="container py-3 flex items-center justify-between">
-          <span className="font-display text-lg font-bold text-foreground">자만추</span>
+          <span className="font-display text-lg font-bold text-foreground">
+            자만추
+          </span>
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sage-light rounded-full">
                 <User size={14} className="text-sage" />
-                <span className="text-xs font-medium text-sage">{user?.name || '회원'}</span>
+                <span className="text-xs font-medium text-sage">
+                  {user?.name || "회원"}
+                </span>
               </div>
               <button
                 onClick={() => setLocation("/notifications")}
@@ -132,7 +153,9 @@ export default function Home() {
             </div>
           ) : (
             <button
-              onClick={() => { window.location.href = getLoginUrl(); }}
+              onClick={() => {
+                window.location.href = getLoginUrl();
+              }}
               className="flex items-center gap-1.5 px-4 py-2 bg-warm-coral text-white text-xs font-semibold rounded-full shadow-sm hover:shadow-md transition-all"
             >
               <LogIn size={12} />
@@ -154,13 +177,16 @@ export default function Home() {
         </div>
 
         <div className="relative container pt-16 pb-12">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-          >
+          <motion.div initial="hidden" animate="visible" className="space-y-6">
             <motion.div variants={fadeUp} custom={0} className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255,255,255,0.85)', color: '#c0564a', backdropFilter: 'blur(4px)' }}>
+              <span
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+                style={{
+                  background: "rgba(255,255,255,0.85)",
+                  color: "#c0564a",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-warm-coral animate-gentle-pulse" />
                 건실한 만남을 위한 AI 매칭
               </span>
@@ -170,23 +196,39 @@ export default function Home() {
               variants={fadeUp}
               custom={1}
               className="font-display text-4xl font-bold leading-tight"
-              style={{ color: '#2d2520', textShadow: '0 1px 8px rgba(255,255,255,0.8)' }}
+              style={{
+                color: "#2d2520",
+                textShadow: "0 1px 8px rgba(255,255,255,0.8)",
+              }}
             >
-              진심이 통하는<br />
-              <span className="text-warm-coral" style={{ textShadow: '0 1px 8px rgba(255,255,255,0.8)' }}>자연스러운 만남</span>
+              진심이 통하는
+              <br />
+              <span
+                className="text-warm-coral"
+                style={{ textShadow: "0 1px 8px rgba(255,255,255,0.8)" }}
+              >
+                자연스러운 만남
+              </span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               custom={2}
               className="text-base leading-relaxed max-w-[320px]"
-              style={{ color: '#4a4039', textShadow: '0 1px 6px rgba(255,255,255,0.7)' }}
+              style={{
+                color: "#4a4039",
+                textShadow: "0 1px 6px rgba(255,255,255,0.7)",
+              }}
             >
-              AI 클론이 먼저 궁합을 탐색하고,
-              사람끼리 대화할 만한 이유를 찾아줍니다.
+              AI 클론이 먼저 궁합을 탐색하고, 사람끼리 대화할 만한 이유를
+              찾아줍니다.
             </motion.p>
 
-            <motion.div variants={fadeUp} custom={3} className="flex gap-3 pt-2">
+            <motion.div
+              variants={fadeUp}
+              custom={3}
+              className="flex gap-3 pt-2"
+            >
               {isAuthenticated ? (
                 <Button
                   onClick={() => setLocation("/clone-setup")}
@@ -197,7 +239,9 @@ export default function Home() {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => { window.location.href = getLoginUrl(); }}
+                  onClick={() => {
+                    window.location.href = getLoginUrl();
+                  }}
                   className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
                 >
                   시작하기
@@ -216,6 +260,27 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="container relative z-10 -mt-4 pb-4">
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { icon: Upload, label: "대화 파일", text: "카카오톡 txt" },
+            { icon: LinkIcon, label: "SNS 링크", text: "공개 활동 참고" },
+            { icon: Shield, label: "보호 범위", text: "말하지 않을 정보" },
+          ].map(item => (
+            <div
+              key={item.label}
+              className="rounded-2xl border border-border bg-white/95 p-3 shadow-sm backdrop-blur"
+            >
+              <item.icon size={16} className="mb-2 text-warm-coral" />
+              <p className="text-xs font-bold text-foreground">{item.label}</p>
+              <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
+                {item.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* How it Works */}
       <section className="container py-12">
         <motion.div
@@ -224,7 +289,11 @@ export default function Home() {
           viewport={{ once: true, margin: "-50px" }}
           className="space-y-8"
         >
-          <motion.div variants={fadeUp} custom={0} className="text-center space-y-2">
+          <motion.div
+            variants={fadeUp}
+            custom={0}
+            className="text-center space-y-2"
+          >
             <h2 className="font-display text-2xl font-bold text-foreground">
               어떻게 작동하나요?
             </h2>
@@ -267,13 +336,21 @@ export default function Home() {
                     </span>
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="font-semibold text-foreground">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                    <h3 className="font-semibold text-foreground">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
                 {item.img && (
                   <div className="mt-4 rounded-lg overflow-hidden">
-                    <img src={item.img} alt={item.title} className="w-full h-40 object-cover" />
+                    <img
+                      src={item.img}
+                      alt={item.title}
+                      className="w-full h-40 object-cover"
+                    />
                   </div>
                 )}
               </motion.div>
@@ -290,7 +367,11 @@ export default function Home() {
           viewport={{ once: true, margin: "-50px" }}
           className="space-y-6"
         >
-          <motion.div variants={fadeUp} custom={0} className="text-center space-y-2">
+          <motion.div
+            variants={fadeUp}
+            custom={0}
+            className="text-center space-y-2"
+          >
             <h2 className="font-display text-2xl font-bold text-foreground">
               자만추만의 특별함
             </h2>
@@ -304,12 +385,18 @@ export default function Home() {
                 custom={i + 1}
                 className="warm-card p-4 space-y-3"
               >
-                <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${feature.color}`}>
+                <div
+                  className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${feature.color}`}
+                >
                   <feature.icon size={20} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground text-sm">{feature.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{feature.desc}</p>
+                  <h3 className="font-semibold text-foreground text-sm">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {feature.desc}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -325,7 +412,11 @@ export default function Home() {
           viewport={{ once: true, margin: "-50px" }}
           className="space-y-6"
         >
-          <motion.div variants={fadeUp} custom={0} className="warm-card overflow-hidden">
+          <motion.div
+            variants={fadeUp}
+            custom={0}
+            className="warm-card overflow-hidden"
+          >
             <img
               src={MATCH_IMG}
               alt="인연의 정원"
@@ -336,8 +427,8 @@ export default function Home() {
                 진짜 잘 맞는 사람을 만나세요
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                외모가 아닌 가치관, 성격, 대화 스타일로 매칭합니다.
-                AI가 정리한 사전 궁합 리포트로 대화를 시작할 이유를 확인하세요.
+                외모가 아닌 가치관, 성격, 대화 스타일로 매칭합니다. AI가 정리한
+                사전 궁합 리포트로 대화를 시작할 이유를 확인하세요.
               </p>
               <Button
                 onClick={() => setLocation("/clone-setup")}
@@ -354,7 +445,9 @@ export default function Home() {
       {/* Footer */}
       <footer className="container py-8 border-t border-border">
         <div className="text-center space-y-2">
-          <p className="font-display text-lg font-bold text-foreground">자만추</p>
+          <p className="font-display text-lg font-bold text-foreground">
+            자만추
+          </p>
           <p className="text-xs text-muted-foreground">
             AI 클론 기반 사전 궁합 탐색 · 자연스러운 만남을 추구합니다
           </p>
