@@ -3,6 +3,7 @@
  * Design: Warm Afternoon Conversation - 건실한 만남
  * 따뜻한 크림 배경, Warm Coral + Sage Green 포인트
  */
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,10 @@ const FEATURES = [
 
 export default function Home() {
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    document.title = "자만추 - AI 클론이 대신 대화하는 새로운 데이팅 앱";
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,7 +262,10 @@ export default function Home() {
         <div className="text-center space-y-2">
           <p className="font-display text-lg font-bold text-foreground">자만추</p>
           <p className="text-xs text-muted-foreground">
-            자연스러운 만남을 추구합니다
+            AI 클론 기반 데이팅 앱 · 자연스러운 만남을 추구합니다
+          </p>
+          <p className="text-[10px] text-muted-foreground/60">
+            AI매칭 · 가치관매칭 · 성격매칭 · 클론채팅 · 소개팅
           </p>
           <p className="text-[10px] text-muted-foreground/60">
             &copy; 2025 자만추. All rights reserved.
