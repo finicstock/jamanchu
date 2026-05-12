@@ -3,7 +3,7 @@
  * Design: Warm Afternoon Conversation - 건실한 만남
  * 실제 tRPC saveProfile 연동
  */
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import MobileNav from "@/components/MobileNav";
@@ -88,6 +88,14 @@ const PREF_MAP: Record<string, "male" | "female" | "both"> = {
   여성: "female",
   모두: "both",
 };
+
+const GENDER_LABEL_BY_VALUE = Object.fromEntries(
+  Object.entries(GENDER_MAP).map(([label, value]) => [value, label])
+) as Record<"male" | "female" | "other", string>;
+
+const PREF_LABEL_BY_VALUE = Object.fromEntries(
+  Object.entries(PREF_MAP).map(([label, value]) => [value, label])
+) as Record<"male" | "female" | "both", string>;
 
 type ContextFile = {
   id: string;
@@ -244,13 +252,23 @@ export default function CloneSetup() {
   const [acceptedAiConsent, setAcceptedAiConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [hasHydratedClone, setHasHydratedClone] = useState(false);
+
+  const { data: existingClone, isLoading: isCloneLoading } =
+    trpc.clone.getMyClone.useQuery(undefined, { enabled: isAuthenticated });
+  const isEditingClone = Boolean(existingClone);
 
   const saveProfileMutation = trpc.clone.saveProfile.useMutation({
     onSuccess: () => {
       setIsGenerating(false);
-      toast.success("AI 클론이 생성되었습니다!", {
-        description: "대시보드에서 매칭을 시작해보세요.",
-      });
+      toast.success(
+        isEditingClone
+          ? "AI 클론이 업데이트되었습니다!"
+          : "AI 클론이 생성되었습니다!",
+        {
+          description: "대시보드에서 매칭을 시작해보세요.",
+        }
+      );
       setLocation("/dashboard");
     },
     onError: err => {
@@ -260,6 +278,27 @@ export default function CloneSetup() {
       });
     },
   });
+
+  useEffect(() => {
+    if (!existingClone || hasHydratedClone) return;
+
+    setNickname(existingClone.nickname ?? "");
+    setAge(existingClone.age ? String(existingClone.age) : "");
+    setSelectedGender(GENDER_LABEL_BY_VALUE[existingClone.gender] ?? null);
+    setSelectedPref(PREF_LABEL_BY_VALUE[existingClone.interestedIn] ?? null);
+    setSelectedTraits(
+      Array.isArray(existingClone.personality) ? existingClone.personality : []
+    );
+    setSelectedInterests(
+      Array.isArray(existingClone.interests) ? existingClone.interests : []
+    );
+    setSelfIntro(existingClone.values ?? "");
+    setPrivacyBoundaries(
+      (existingClone.lifestyle ?? "").replace(/^공개 금지\/주의 정보:\s*/, "")
+    );
+    setAcceptedAiConsent(true);
+    setHasHydratedClone(true);
+  }, [existingClone, hasHydratedClone]);
 
   const toggleTrait = (trait: string) => {
     setSelectedTraits(prev =>
@@ -483,6 +522,21 @@ export default function CloneSetup() {
     });
   };
 
+  if (authLoading || (isAuthenticated && isCloneLoading && !hasHydratedClone)) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="h-10 w-10 mx-auto rounded-full bg-warm-coral-light flex items-center justify-center animate-gentle-pulse">
+            <Heart size={20} className="text-warm-coral" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            클론 정보를 불러오는 중...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!authLoading && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -508,7 +562,7 @@ export default function CloneSetup() {
               <ChevronLeft size={20} />
             </button>
             <h1 className="font-display font-bold text-foreground">
-              클론 만들기
+              {isEditingClone ? "클론 수정" : "클론 만들기"}
             </h1>
             <span className="text-xs text-muted-foreground">{step}/4</span>
           </div>
@@ -1240,12 +1294,12 @@ export default function CloneSetup() {
               {isGenerating ? (
                 <>
                   <Brain size={18} className="mr-2 animate-gentle-pulse" />
-                  클론 생성 중...
+                  {isEditingClone ? "클론 업데이트 중..." : "클론 생성 중..."}
                 </>
               ) : (
                 <>
                   <Sparkles size={18} className="mr-2" />
-                  AI 클론 생성하기
+                  {isEditingClone ? "AI 클론 업데이트하기" : "AI 클론 생성하기"}
                 </>
               )}
             </Button>
