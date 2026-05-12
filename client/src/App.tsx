@@ -10,7 +10,9 @@ import CloneSetup from "./pages/CloneSetup";
 import ChatLog from "./pages/ChatLog";
 import Report from "./pages/Report";
 import Pricing from "./pages/Pricing";
+import Admin from "./pages/Admin";
 import { AnimatePresence } from "framer-motion";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -22,6 +24,7 @@ function Router() {
         <Route path="/chat-log" component={ChatLog} />
         <Route path="/report" component={Report} />
         <Route path="/pricing" component={Pricing} />
+        <Route path="/admin" component={Admin} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
