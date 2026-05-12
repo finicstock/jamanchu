@@ -61,7 +61,7 @@ export default function Home() {
             alt="따뜻한 카페에서의 만남"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/80 to-background" />
         </div>
 
         <div className="relative container pt-16 pb-12">
@@ -71,7 +71,7 @@ export default function Home() {
             className="space-y-6"
           >
             <motion.div variants={fadeUp} custom={0} className="space-y-2">
-              <span className="badge-coral inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255,255,255,0.85)', color: '#c0564a', backdropFilter: 'blur(4px)' }}>
                 <span className="h-1.5 w-1.5 rounded-full bg-warm-coral animate-gentle-pulse" />
                 건실한 만남을 위한 AI 매칭
               </span>
@@ -80,16 +80,18 @@ export default function Home() {
             <motion.h1
               variants={fadeUp}
               custom={1}
-              className="font-display text-4xl font-bold text-foreground leading-tight"
+              className="font-display text-4xl font-bold leading-tight"
+              style={{ color: '#2d2520', textShadow: '0 1px 8px rgba(255,255,255,0.8)' }}
             >
               진심이 통하는<br />
-              <span className="text-warm-coral">자연스러운 만남</span>
+              <span className="text-warm-coral" style={{ textShadow: '0 1px 8px rgba(255,255,255,0.8)' }}>자연스러운 만남</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="text-muted-foreground text-base leading-relaxed max-w-[320px]"
+              className="text-base leading-relaxed max-w-[320px]"
+              style={{ color: '#4a4039', textShadow: '0 1px 6px rgba(255,255,255,0.7)' }}
             >
               AI 클론이 당신을 대신해 대화하고,
               진짜 잘 맞는 사람을 찾아줍니다.
