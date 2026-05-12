@@ -23,6 +23,7 @@ import {
   Link as LinkIcon,
   Menu,
   CreditCard,
+  Target,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -153,6 +154,10 @@ export default function Home() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setLocation("/match-test")}>
+                    <Target className="mr-2 h-4 w-4" />
+                    매칭률 테스트
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/pricing")}>
                     <CreditCard className="mr-2 h-4 w-4" />
                     파이닉스
@@ -249,31 +254,21 @@ export default function Home() {
               custom={3}
               className="flex gap-3 pt-2"
             >
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => setLocation("/clone-setup")}
-                  className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
-                >
-                  클론 만들기
-                  <ArrowRight size={16} className="ml-2" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => {
-                    window.location.href = getLoginUrl();
-                  }}
-                  className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
-                >
-                  시작하기
-                  <ArrowRight size={16} className="ml-2" />
-                </Button>
-              )}
               <Button
-                onClick={() => setLocation("/dashboard")}
+                onClick={() => setLocation("/match-test")}
+                className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
+              >
+                매칭률 테스트
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+              <Button
+                onClick={() =>
+                  setLocation(isAuthenticated ? "/clone-setup" : "/dashboard")
+                }
                 variant="outline"
                 className="h-12 px-6 rounded-full border-border bg-white/80 backdrop-blur-sm text-foreground font-medium hover:bg-white"
               >
-                둘러보기
+                {isAuthenticated ? "클론 만들기" : "둘러보기"}
               </Button>
             </motion.div>
           </motion.div>

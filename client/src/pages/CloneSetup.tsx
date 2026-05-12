@@ -97,6 +97,18 @@ const PREF_LABEL_BY_VALUE = Object.fromEntries(
   Object.entries(PREF_MAP).map(([label, value]) => [value, label])
 ) as Record<"male" | "female" | "both", string>;
 
+const MATCH_TEST_DRAFT_KEY = "jamanchu.matchTestDraft";
+
+type MatchTestDraft = {
+  nickname?: string;
+  age?: number;
+  gender?: "male" | "female" | "other";
+  interestedIn?: "male" | "female" | "both";
+  personality?: string[];
+  interests?: string[];
+  values?: string;
+};
+
 type ContextFile = {
   id: string;
   name: string;
@@ -299,6 +311,51 @@ export default function CloneSetup() {
     setAcceptedAiConsent(true);
     setHasHydratedClone(true);
   }, [existingClone, hasHydratedClone]);
+
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      isCloneLoading ||
+      existingClone ||
+      hasHydratedClone
+    ) {
+      return;
+    }
+
+    const rawDraft = localStorage.getItem(MATCH_TEST_DRAFT_KEY);
+    if (!rawDraft) {
+      setHasHydratedClone(true);
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(rawDraft) as MatchTestDraft;
+      setNickname(draft.nickname || "");
+      setAge(draft.age ? String(draft.age) : "");
+      setSelectedGender(
+        draft.gender ? GENDER_LABEL_BY_VALUE[draft.gender] : null
+      );
+      setSelectedPref(
+        draft.interestedIn ? PREF_LABEL_BY_VALUE[draft.interestedIn] : null
+      );
+      setSelectedTraits(
+        Array.isArray(draft.personality) ? draft.personality : []
+      );
+      setSelectedInterests(
+        Array.isArray(draft.interests) ? draft.interests : []
+      );
+      setSelfIntro(draft.values ?? "");
+      setAcceptedAiConsent(true);
+      localStorage.removeItem(MATCH_TEST_DRAFT_KEY);
+      toast.success("매칭률 테스트 조건을 불러왔습니다.", {
+        description: "필요한 부분만 다듬고 클론을 생성해보세요.",
+      });
+    } catch {
+      localStorage.removeItem(MATCH_TEST_DRAFT_KEY);
+    } finally {
+      setHasHydratedClone(true);
+    }
+  }, [existingClone, hasHydratedClone, isAuthenticated, isCloneLoading]);
 
   const toggleTrait = (trait: string) => {
     setSelectedTraits(prev =>
