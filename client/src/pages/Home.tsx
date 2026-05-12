@@ -21,7 +21,16 @@ import {
   Bell,
   Upload,
   Link as LinkIcon,
+  Menu,
+  CreditCard,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -108,58 +117,69 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       {/* Top Auth Bar */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
-        <div className="container py-3 flex items-center justify-between">
-          <span className="font-display text-lg font-bold text-foreground">
+        <div className="container py-2.5 flex items-center justify-between gap-3">
+          <button
+            onClick={() => setLocation("/")}
+            className="font-display text-lg font-bold text-foreground whitespace-nowrap leading-none"
+            aria-label="자만추 홈"
+          >
             자만추
-          </span>
+          </button>
+
           {isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sage-light rounded-full">
-                <User size={14} className="text-sage" />
-                <span className="text-xs font-medium text-sage">
-                  {user?.name || "회원"}
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setLocation("/notifications")}
-                className="relative flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                aria-label="알림"
               >
-                <Bell size={14} />
+                <Bell size={17} />
                 <NotificationBadge />
               </button>
               <button
                 onClick={() => setLocation("/mypage")}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-warm-coral-light text-warm-coral text-xs font-medium rounded-full hover:bg-[#f5d0c8] transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-warm-coral-light text-warm-coral hover:bg-[#f5d0c8] transition-colors"
+                aria-label="마이페이지"
               >
-                <Heart size={12} />
-                마이페이지
+                <User size={17} />
               </button>
-              {user?.role === "admin" && (
-                <button
-                  onClick={() => setLocation("/admin")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-full hover:bg-gray-800 transition-colors"
-                >
-                  <Settings size={12} />
-                  관리자
-                </button>
-              )}
-              <button
-                onClick={() => logout()}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <LogOut size={12} />
-                로그아웃
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white text-foreground shadow-sm hover:bg-muted transition-colors"
+                    aria-label="메뉴 열기"
+                  >
+                    <Menu size={18} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => setLocation("/pricing")}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    파이닉스
+                  </DropdownMenuItem>
+                  {user?.role === "admin" && (
+                    <DropdownMenuItem onClick={() => setLocation("/admin")}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      관리자
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => logout()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : (
             <button
               onClick={() => {
                 window.location.href = getLoginUrl();
               }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-warm-coral text-white text-xs font-semibold rounded-full shadow-sm hover:shadow-md transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-warm-coral text-white text-xs font-semibold rounded-full shadow-sm hover:shadow-md transition-all whitespace-nowrap shrink-0"
             >
               <LogIn size={12} />
-              로그인 / 회원가입
+              로그인
             </button>
           )}
         </div>
