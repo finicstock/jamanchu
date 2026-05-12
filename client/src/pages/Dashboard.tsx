@@ -3,11 +3,14 @@
  * Design: Warm Afternoon Conversation - 건실한 만남
  */
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import MobileNav from "@/components/MobileNav";
 import { Activity, MessageSquare, Eye, Lock, ChevronRight, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/_core/hooks/useAuth";
+import LoginModal from "@/components/LoginModal";
 
 const MOCK_MATCHES = [
   {
@@ -58,6 +61,20 @@ const fadeUp = {
 };
 
 export default function Dashboard() {
+  const { isAuthenticated, loading } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(true);
+
+  if (!loading && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoginModal
+          isOpen={true}
+          onClose={() => setLocation("/")}
+          message="대시보드를 이용하려면 로그인이 필요합니다. 간편하게 가입하고 AI 클론의 활동을 확인해보세요."
+        />
+      </div>
+    );
+  }
   const [, setLocation] = useLocation();
 
   return (

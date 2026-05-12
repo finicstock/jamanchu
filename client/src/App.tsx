@@ -11,8 +11,8 @@ import ChatLog from "./pages/ChatLog";
 import Report from "./pages/Report";
 import Pricing from "./pages/Pricing";
 import { AnimatePresence } from "framer-motion";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <AnimatePresence mode="wait">
       <Switch>

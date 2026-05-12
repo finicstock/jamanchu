@@ -7,7 +7,9 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight } from "lucide-react";
+import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/hero-warm-UchKCieCyinfad4qZVoK5c.webp";
 const CLONE_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663648339158/d5GvYzQcaxufDRxQjQ2CSo/clone-activity-warm-hhH8j4eLwaWyKQMeaVmVGy.webp";
@@ -50,14 +52,62 @@ const FEATURES = [
 ];
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     document.title = "자만추 - AI 클론이 대신 대화하는 새로운 데이팅 앱";
   }, []);
 
+  // 로딩 상태
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="h-10 w-10 mx-auto rounded-full bg-warm-coral-light flex items-center justify-center animate-gentle-pulse">
+            <Heart size={20} className="text-warm-coral" />
+          </div>
+          <p className="text-sm text-muted-foreground">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Top Auth Bar */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-border">
+        <div className="container py-3 flex items-center justify-between">
+          <span className="font-display text-lg font-bold text-foreground">자만추</span>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-sage-light rounded-full">
+                <User size={14} className="text-sage" />
+                <span className="text-xs font-medium text-sage">{user?.name || '회원'}</span>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <LogOut size={12} />
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { window.location.href = getLoginUrl(); }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-warm-coral text-white text-xs font-semibold rounded-full shadow-sm hover:shadow-md transition-all"
+            >
+              <LogIn size={12} />
+              로그인 / 회원가입
+            </button>
+          )}
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
@@ -103,13 +153,23 @@ export default function Home() {
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex gap-3 pt-2">
-              <Button
-                onClick={() => setLocation("/clone-setup")}
-                className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
-              >
-                시작하기
-                <ArrowRight size={16} className="ml-2" />
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  onClick={() => setLocation("/clone-setup")}
+                  className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
+                >
+                  클론 만들기
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => { window.location.href = getLoginUrl(); }}
+                  className="h-12 px-6 gradient-coral text-white font-semibold rounded-full shadow-lg shadow-warm-coral/20 hover:shadow-xl hover:shadow-warm-coral/30 transition-all"
+                >
+                  시작하기
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              )}
               <Button
                 onClick={() => setLocation("/dashboard")}
                 variant="outline"
