@@ -442,6 +442,105 @@ B의 프로필: ${partner.nickname}, ${partner.age}세, 성격: ${(partner.perso
 
     return result;
   }),
+
+  // 채팅 상세 조회 (ID 기반)
+  getChatById: protectedProcedure
+    .input(z.object({ chatId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const chat = await db
+        .select()
+        .from(cloneChats)
+        .where(
+          and(
+            eq(cloneChats.id, input.chatId),
+            or(
+              eq(cloneChats.userAId, ctx.user.id),
+              eq(cloneChats.userBId, ctx.user.id)
+            )
+          )
+        )
+        .limit(1);
+
+      if (!chat[0]) throw new Error("대화를 찾을 수 없습니다.");
+
+      const c = chat[0];
+      const partnerId = c.userAId === ctx.user.id ? c.userBId : c.userAId;
+      const myClone = await db.select().from(cloneProfiles).where(eq(cloneProfiles.userId, ctx.user.id)).limit(1);
+      const partnerClone = await db.select().from(cloneProfiles).where(eq(cloneProfiles.userId, partnerId)).limit(1);
+
+      // 관련 리포트 조회
+      const report = await db
+        .select()
+        .from(chemistryReports)
+        .where(eq(chemistryReports.chatId, input.chatId))
+        .limit(1);
+
+      return {
+        id: c.id,
+        myNickname: myClone[0]?.nickname ?? "나",
+        partnerNickname: partnerClone[0]?.nickname ?? "알 수 없음",
+        status: c.status,
+        totalMessages: c.totalMessages,
+        messages: c.messages ?? [],
+        createdAt: c.createdAt,
+        completedAt: c.completedAt,
+        reportId: report[0]?.id ?? null,
+        reportScore: report[0]?.overallScore ?? null,
+      };
+    }),
+
+  // 리포트 상세 조회 (ID 기반)
+  getReportById: protectedProcedure
+    .input(z.object({ reportId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const report = await db
+        .select()
+        .from(chemistryReports)
+        .where(
+          and(
+            eq(chemistryReports.id, input.reportId),
+            or(
+              eq(chemistryReports.userAId, ctx.user.id),
+              eq(chemistryReports.userBId, ctx.user.id)
+            )
+          )
+        )
+        .limit(1);
+
+      if (!report[0]) throw new Error("리포트를 찾을 수 없습니다.");
+
+      const r = report[0];
+      const partnerId = r.userAId === ctx.user.id ? r.userBId : r.userAId;
+      const myClone = await db.select().from(cloneProfiles).where(eq(cloneProfiles.userId, ctx.user.id)).limit(1);
+      const partnerClone = await db.select().from(cloneProfiles).where(eq(cloneProfiles.userId, partnerId)).limit(1);
+
+      // 관련 대화 정보
+      const chat = await db
+        .select()
+        .from(cloneChats)
+        .where(eq(cloneChats.id, r.chatId))
+        .limit(1);
+
+      return {
+        id: r.id,
+        chatId: r.chatId,
+        myNickname: myClone[0]?.nickname ?? "나",
+        partnerNickname: partnerClone[0]?.nickname ?? "알 수 없음",
+        overallScore: r.overallScore,
+        scores: r.scores ?? [],
+        highlights: r.highlights ?? [],
+        summary: r.summary ?? "",
+        status: r.status,
+        createdAt: r.createdAt,
+        totalMessages: chat[0]?.totalMessages ?? 0,
+      };
+    }),
 });
 
 function buildClonePrompt(profile: {

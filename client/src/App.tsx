@@ -24,7 +24,9 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/clone-setup" component={CloneSetup} />
         <Route path="/chat-log" component={ChatLog} />
+        <Route path="/chat-log/:id" component={ChatLog} />
         <Route path="/report" component={Report} />
+        <Route path="/report/:id" component={Report} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/admin" component={Admin} />
         <Route path="/mypage" component={MyPage} />

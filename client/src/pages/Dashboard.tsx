@@ -217,7 +217,7 @@ export default function Dashboard() {
               {chats.slice(0, 5).map((chat) => (
                 <button
                   key={chat.id}
-                  onClick={() => setLocation("/chat-log")}
+                  onClick={() => setLocation(`/chat-log/${chat.id}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-sage-light/50 transition text-left"
                 >
                   <div className={`h-9 w-9 rounded-full flex items-center justify-center ${
@@ -265,7 +265,7 @@ export default function Dashboard() {
               {reports.slice(0, 5).map((report) => (
                 <button
                   key={report.id}
-                  onClick={() => setLocation("/report")}
+                  onClick={() => setLocation(`/report/${report.id}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-sage-light/50 transition text-left"
                 >
                   <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#E8725C] to-[#FF9A76] flex items-center justify-center">
