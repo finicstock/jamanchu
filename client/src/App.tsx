@@ -13,6 +13,7 @@ import Pricing from "./pages/Pricing";
 import Admin from "./pages/Admin";
 import MyPage from "./pages/MyPage";
 import Notifications from "./pages/Notifications";
+import MatchTest from "./pages/MatchTest";
 import { AnimatePresence } from "framer-motion";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
     <AnimatePresence mode="wait">
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/match-test" component={MatchTest} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/clone-setup" component={CloneSetup} />
         <Route path="/chat-log" component={ChatLog} />
