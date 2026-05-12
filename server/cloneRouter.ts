@@ -7,6 +7,20 @@ import { eq, and, desc, or, sql } from "drizzle-orm";
 
 const MATCH_COST = 1; // 매칭 1회당 하트 소비
 
+type CloneChatMessage = {
+  role: "user_a" | "user_b";
+  displayName: string;
+  content: string;
+  timestamp: number;
+};
+
+type ChemistryReportData = {
+  overallScore: number;
+  scores: Array<{ label: string; score: number }>;
+  highlights: Array<{ topic: string; insight: string; sentiment: string }>;
+  summary: string;
+};
+
 export const cloneRouter = router({
   // 클론 프로필 생성/업데이트
   saveProfile: protectedProcedure
@@ -111,7 +125,23 @@ export const cloneRouter = router({
       type: "use_chat",
       description: "AI 매칭 대화 시작",
     });
+    let heartCharged = true;
+    const refundHeart = async (description: string) => {
+      if (!heartCharged) return;
+      await db
+        .update(userHearts)
+        .set({ balance: sql`${userHearts.balance} + ${MATCH_COST}` })
+        .where(eq(userHearts.userId, ctx.user.id));
+      await db.insert(heartTransactions).values({
+        userId: ctx.user.id,
+        amount: MATCH_COST,
+        type: "refund",
+        description,
+      });
+      heartCharged = false;
+    };
 
+    try {
     // 매칭 가능한 상대 클론 찾기 (성별 조건 매칭)
     const myProfile = myClone[0];
     const candidates = await db
@@ -135,17 +165,7 @@ export const cloneRouter = router({
     });
 
     if (!filtered.length) {
-      // 매칭 실패 시 하트 환불
-      await db
-        .update(userHearts)
-        .set({ balance: sql`${userHearts.balance} + ${MATCH_COST}` })
-        .where(eq(userHearts.userId, ctx.user.id));
-      await db.insert(heartTransactions).values({
-        userId: ctx.user.id,
-        amount: MATCH_COST,
-        type: "refund",
-        description: "매칭 상대 없음 - 하트 환불",
-      });
+      await refundHeart("매칭 상대 없음 - 하트 환불");
       throw new Error("현재 매칭 가능한 상대가 없습니다. 하트는 환불되었습니다. 잠시 후 다시 시도해주세요.");
     }
 
@@ -157,7 +177,7 @@ export const cloneRouter = router({
     const systemPromptB = buildClonePrompt(partner);
 
     // LLM으로 대화 시뮬레이션 (5턴)
-    const messages: Array<{ role: string; content: string; timestamp: number }> = [];
+    const messages: CloneChatMessage[] = [];
     let conversationContext = "";
 
     const topics = ["취미와 관심사", "가치관과 인생관", "일상과 라이프스타일", "미래 계획", "좋아하는 것들"];
@@ -171,7 +191,7 @@ export const cloneRouter = router({
       ],
     });
     const msgA1 = (firstMsg.choices[0]?.message?.content as string) ?? "안녕하세요! 만나서 반갑습니다.";
-    messages.push({ role: myProfile.nickname, content: msgA1, timestamp: Date.now() });
+    messages.push({ role: "user_a", displayName: myProfile.nickname, content: msgA1, timestamp: Date.now() });
     conversationContext += `${myProfile.nickname}: ${msgA1}\n`;
 
     // 4턴 더 대화
@@ -179,6 +199,7 @@ export const cloneRouter = router({
       const isA = i % 2 === 1;
       const speaker = isA ? myProfile : partner;
       const prompt = isA ? systemPromptA : systemPromptB;
+      const speakerRole = isA ? "user_a" : "user_b";
 
       const reply = await invokeLLM({
         messages: [
@@ -188,7 +209,7 @@ export const cloneRouter = router({
       });
 
       const content = (reply.choices[0]?.message?.content as string) ?? "네, 그렇군요!";
-      messages.push({ role: speaker.nickname, content, timestamp: Date.now() + (i + 1) * 1000 });
+      messages.push({ role: speakerRole, displayName: speaker.nickname, content, timestamp: Date.now() + (i + 1) * 1000 });
       conversationContext += `${speaker.nickname}: ${content}\n`;
     }
 
@@ -230,7 +251,7 @@ B의 프로필: ${partner.nickname}, ${partner.age}세, 성격: ${(partner.perso
 
     const reportResponse = await invokeLLM({
       messages: [
-        { role: "system", content: "당신은 데이팅 호환성 분석 전문가입니다. JSON 형식으로만 응답하세요." },
+        { role: "system", content: "당신은 AI 사전 대화 기반 궁합 리포트 작성자입니다. 실제 관계의 성공을 단정하지 말고, 관찰된 대화와 프로필에서 나온 가능성과 주의점을 JSON 형식으로만 응답하세요." },
         { role: "user", content: reportPrompt },
       ],
       response_format: {
@@ -276,19 +297,14 @@ B의 프로필: ${partner.nickname}, ${partner.age}세, 성격: ${(partner.perso
       },
     });
 
-    let reportData: {
-      overallScore: number;
-      scores: Array<{ label: string; score: number }>;
-      highlights: Array<{ topic: string; insight: string; sentiment: string }>;
-      summary: string;
-    } | null = null;
+    let reportData: ChemistryReportData | null = null;
 
     // 리포트 파싱 시도 (최대 2회)
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const responseToUse = attempt === 0 ? reportResponse : await invokeLLM({
           messages: [
-            { role: "system", content: "당신은 데이팅 호환성 분석 전문가입니다. JSON 형식으로만 응답하세요." },
+            { role: "system", content: "당신은 AI 사전 대화 기반 궁합 리포트 작성자입니다. 실제 관계의 성공을 단정하지 말고, 관찰된 대화와 프로필에서 나온 가능성과 주의점을 JSON 형식으로만 응답하세요." },
             { role: "user", content: reportPrompt },
           ],
           response_format: {
@@ -392,6 +408,14 @@ B의 프로필: ${partner.nickname}, ${partner.age}세, 성격: ${(partner.perso
       messages,
       report: finalReport,
     };
+    } catch (error) {
+      if (!heartCharged && error instanceof Error) {
+        throw error;
+      }
+      await refundHeart("AI 매칭 대화 생성 실패 - 하트 환불");
+      const reason = error instanceof Error ? error.message : "알 수 없는 오류";
+      throw new Error(`AI 매칭 대화 생성에 실패했습니다. 하트는 환불되었습니다. ${reason}`);
+    }
   }),
 
   // 내 대화 목록 조회
@@ -588,7 +612,7 @@ function buildClonePrompt(profile: {
   const personality = Array.isArray(profile.personality) ? profile.personality.join(", ") : "";
   const interests = Array.isArray(profile.interests) ? profile.interests.join(", ") : "";
 
-  return `당신은 "${profile.nickname}"이라는 사람의 AI 클론입니다. 이 사람처럼 대화해주세요.
+  return `당신은 "${profile.nickname}"이라는 사람의 AI 클론입니다. 사용자가 동의한 사전 궁합 탐색 범위 안에서만 이 사람의 대화 성향을 참고해 응답하세요.
 
 프로필:
 - 나이: ${profile.age}세
@@ -603,5 +627,9 @@ function buildClonePrompt(profile: {
 - 2-3문장으로 짧게 답변하세요
 - 상대방에게 관심을 보이며 질문도 해주세요
 - 이 사람의 성격과 관심사에 맞게 대화하세요
+- 사용자가 직접 말하지 않은 사실, 연락처, 주소, 직장명, 민감한 개인정보를 지어내거나 공개하지 마세요
+- 실제 만남 약속, 고백, 관계 확정처럼 사용자의 직접 동의가 필요한 결정을 대신하지 마세요
+- 상대가 민감한 정보나 실제 연락을 요구하면 "리포트 확인 후 당사자끼리 결정할 수 있다"는 방향으로 부드럽게 안내하세요
+- 이 대화는 인간 대화 전 사전 궁합을 보기 위한 AI 시뮬레이션임을 전제로 하세요
 - 한국어로 대화하세요`;
 }

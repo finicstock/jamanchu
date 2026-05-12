@@ -22,6 +22,8 @@ import {
   Star,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -118,6 +120,10 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Pricing() {
+  const { isAuthenticated } = useAuth();
+  const { data: profile } = trpc.profile.getMyProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
   const [activeTab, setActiveTab] = useState<"hearts" | "subscription">("hearts");
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -126,6 +132,10 @@ export default function Pricing() {
   const [paymentStep, setPaymentStep] = useState<"select" | "confirm" | "processing" | "done">("select");
 
   const handlePurchase = (itemId: string) => {
+    if (!isAuthenticated) {
+      toast.info("로그인 후 이용할 수 있습니다.");
+      return;
+    }
     setSelectedPackage(itemId);
     setSelectedPlan(null);
     setSelectedPayment(null);
@@ -134,6 +144,10 @@ export default function Pricing() {
   };
 
   const handleSubscribe = (planId: string) => {
+    if (!isAuthenticated) {
+      toast.info("로그인 후 이용할 수 있습니다.");
+      return;
+    }
     setSelectedPlan(planId);
     setSelectedPackage(null);
     setSelectedPayment(null);
@@ -142,17 +156,11 @@ export default function Pricing() {
   };
 
   const handleConfirmPayment = () => {
-    setPaymentStep("processing");
-    setTimeout(() => {
-      setPaymentStep("done");
-      setTimeout(() => {
-        setShowPaymentModal(false);
-        setPaymentStep("select");
-        toast.success("결제가 완료되었습니다!", {
-          description: selectedPackage ? "하트가 충전되었습니다." : "구독이 시작되었습니다.",
-        });
-      }, 1500);
-    }, 2000);
+    setShowPaymentModal(false);
+    setPaymentStep("select");
+    toast.info("결제 연동은 아직 준비 중입니다.", {
+      description: "현재 베타에서는 관리자 하트 부여 또는 테스트 계정으로 플로우를 확인해주세요.",
+    });
   };
 
   const getSelectedItemName = () => {
@@ -184,7 +192,7 @@ export default function Pricing() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-border">
         <div className="container py-4">
-          <h1 className="font-display text-xl font-bold text-foreground text-center">상점</h1>
+          <h1 className="font-display text-xl font-bold text-foreground text-center">상점 베타</h1>
         </div>
       </header>
 
@@ -201,7 +209,7 @@ export default function Pricing() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">보유 하트</p>
-              <p className="text-lg font-bold text-foreground">12개</p>
+              <p className="text-lg font-bold text-foreground">{profile?.hearts.balance ?? 0}개</p>
             </div>
           </div>
           <div className="text-right">
@@ -304,7 +312,7 @@ export default function Pricing() {
 
             {/* Payment Methods Info */}
             <motion.div variants={fadeUp} custom={11} className="space-y-3">
-              <h2 className="font-display text-lg font-bold text-foreground">지원 결제 수단</h2>
+              <h2 className="font-display text-lg font-bold text-foreground">예정 결제 수단</h2>
               <div className="grid grid-cols-4 gap-2">
                 {PAYMENT_METHODS.map((method) => (
                   <div key={method.id} className={`p-2.5 rounded-xl border text-center ${method.color}`}>
@@ -520,7 +528,7 @@ export default function Pricing() {
                         onClick={handleConfirmPayment}
                         className="flex-[2] h-12 gradient-coral text-white font-semibold rounded-full shadow-md shadow-warm-coral/20"
                       >
-                        {getSelectedItemPrice()} 결제하기
+                        결제 연동 준비 중
                       </Button>
                     </div>
                   </div>

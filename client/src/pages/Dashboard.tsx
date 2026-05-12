@@ -144,12 +144,12 @@ export default function Dashboard() {
                 {isSimulating ? (
                   <>
                     <Loader2 size={16} className="animate-spin mr-2" />
-                    AI 대화 시뮬레이션 중... (약 30초 소요)
+                    AI 사전 대화 생성 중... (약 30초 소요)
                   </>
                 ) : (
                   <>
                     <Play size={16} className="mr-2" />
-                    새로운 매칭 시작하기 (♥ 1)
+                    사전 궁합 탐색 시작하기 (♥ 1)
                   </>
                 )}
               </Button>
@@ -170,7 +170,7 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mt-1">
                   나의 성격과 가치관을 학습한 AI 클론을 만들어보세요.
                   <br />
-                  클론이 자동으로 대화하고 맞는 사람을 찾아줍니다.
+                  클론이 동의한 범위 안에서 사전 궁합을 탐색합니다.
                 </p>
               </div>
               <Button
@@ -252,7 +252,7 @@ export default function Dashboard() {
             <div className="text-center py-6">
               <Search size={24} className="mx-auto text-gray-200 mb-2" />
               <p className="text-xs text-muted-foreground">아직 대화 기록이 없습니다.</p>
-              <p className="text-[10px] text-muted-foreground mt-1">위에서 '새로운 매칭 시작하기'를 눌러보세요!</p>
+              <p className="text-[10px] text-muted-foreground mt-1">위에서 '사전 궁합 탐색 시작하기'를 눌러보세요!</p>
             </div>
           )}
         </motion.div>

@@ -249,8 +249,9 @@ function ChatDetailView({ chatId }: { chatId: number }) {
 
             {/* 메시지 버블 */}
             <AnimatePresence>
-              {chat.messages.map((msg: { role: string; content: string; timestamp: number }, idx: number) => {
-                const isMyClone = msg.role === "user_a";
+              {chat.messages.map((msg: { role: string; displayName?: string; content: string; timestamp: number }, idx: number) => {
+                const isMyClone = msg.role === "user_a" || msg.role === chat.myNickname;
+                const speakerName = msg.displayName ?? (isMyClone ? chat.myNickname : chat.partnerNickname);
                 return (
                   <motion.div
                     key={idx}
@@ -272,7 +273,7 @@ function ChatDetailView({ chatId }: { chatId: number }) {
                       {/* 메시지 버블 */}
                       <div className={`space-y-1 ${isMyClone ? "items-end" : "items-start"}`}>
                         <p className={`text-[10px] font-medium ${isMyClone ? "text-right" : "text-left"} text-muted-foreground`}>
-                          {isMyClone ? `${chat.myNickname}의 클론` : `${chat.partnerNickname}의 클론`}
+                        {speakerName}의 클론
                         </p>
                         <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                           isMyClone

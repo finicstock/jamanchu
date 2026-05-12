@@ -29,13 +29,13 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: "AI 클론 생성",
-    desc: "나의 성격과 가치관을 학습한 AI 클론이 대신 대화합니다",
+    desc: "내 성격과 가치관을 바탕으로 사전 궁합 탐색용 클론을 만듭니다",
     color: "bg-warm-coral-light text-warm-coral",
   },
   {
     icon: MessageSquare,
-    title: "자연스러운 대화",
-    desc: "클론끼리 편안하게 대화하며 서로의 호환성을 확인합니다",
+    title: "동의 기반 사전 대화",
+    desc: "사람끼리 대화하기 전, AI 클론끼리 짧게 대화하며 어색함을 줄입니다",
     color: "bg-sage-light text-sage",
   },
   {
@@ -70,7 +70,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    document.title = "자만추 - AI 클론이 대신 대화하는 새로운 데이팅 앱";
+    document.title = "자만추 - AI 클론이 사전 궁합을 탐색하는 데이팅 앱";
   }, []);
 
   // 로딩 상태
@@ -182,8 +182,8 @@ export default function Home() {
               className="text-base leading-relaxed max-w-[320px]"
               style={{ color: '#4a4039', textShadow: '0 1px 6px rgba(255,255,255,0.7)' }}
             >
-              AI 클론이 당신을 대신해 대화하고,
-              진짜 잘 맞는 사람을 찾아줍니다.
+              AI 클론이 먼저 궁합을 탐색하고,
+              사람끼리 대화할 만한 이유를 찾아줍니다.
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex gap-3 pt-2">
@@ -238,19 +238,19 @@ export default function Home() {
               {
                 step: "01",
                 title: "클론 만들기",
-                desc: "대화 내역, 관심사, 가치관을 입력하면 나를 닮은 AI 클론이 만들어집니다.",
+                desc: "관심사, 가치관, 말하지 않을 정보를 입력하면 사전 탐색용 AI 클론이 만들어집니다.",
                 img: null,
               },
               {
                 step: "02",
                 title: "클론이 대화하기",
-                desc: "AI 클론이 자동으로 다른 사람의 클론과 자연스럽게 대화합니다.",
+                desc: "양쪽 사용자의 동의 범위 안에서 AI 클론이 짧은 사전 대화를 나눕니다.",
                 img: CLONE_IMG,
               },
               {
                 step: "03",
                 title: "리포트 확인하기",
-                desc: "대화 분석 결과를 바탕으로 호환성 리포트를 확인하고, 마음에 드는 상대에게 대화를 신청하세요.",
+                desc: "대화 분석 결과를 확인한 뒤, 충분히 괜찮다고 느껴질 때 실제 대화를 신청하세요.",
                 img: null,
               },
             ].map((item, i) => (
@@ -337,7 +337,7 @@ export default function Home() {
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 외모가 아닌 가치관, 성격, 대화 스타일로 매칭합니다.
-                AI가 분석한 호환성 리포트로 확신을 가지고 만나보세요.
+                AI가 정리한 사전 궁합 리포트로 대화를 시작할 이유를 확인하세요.
               </p>
               <Button
                 onClick={() => setLocation("/clone-setup")}
@@ -356,7 +356,7 @@ export default function Home() {
         <div className="text-center space-y-2">
           <p className="font-display text-lg font-bold text-foreground">자만추</p>
           <p className="text-xs text-muted-foreground">
-            AI 클론 기반 데이팅 앱 · 자연스러운 만남을 추구합니다
+            AI 클론 기반 사전 궁합 탐색 · 자연스러운 만남을 추구합니다
           </p>
           <p className="text-[10px] text-muted-foreground/60">
             AI매칭 · 가치관매칭 · 성격매칭 · 클론채팅 · 소개팅

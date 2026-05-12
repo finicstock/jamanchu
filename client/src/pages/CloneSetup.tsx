@@ -20,6 +20,7 @@ import {
   Brain,
   AlertCircle,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -72,6 +73,8 @@ export default function CloneSetup() {
   const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selfIntro, setSelfIntro] = useState("");
+  const [privacyBoundaries, setPrivacyBoundaries] = useState("");
+  const [acceptedAiConsent, setAcceptedAiConsent] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -156,6 +159,13 @@ export default function CloneSetup() {
       toast.error("기본 정보를 모두 입력해주세요.");
       return;
     }
+    if (!acceptedAiConsent) {
+      toast.error("AI 클론 운영 원칙에 동의해주세요.");
+      return;
+    }
+    const lifestyleNotes = privacyBoundaries.trim()
+      ? `공개 금지/주의 정보: ${privacyBoundaries.trim()}`
+      : undefined;
     setIsGenerating(true);
     saveProfileMutation.mutate({
       nickname: nickname.trim(),
@@ -165,7 +175,7 @@ export default function CloneSetup() {
       personality: selectedTraits,
       interests: selectedInterests,
       values: selfIntro.trim() || undefined,
-      lifestyle: undefined,
+      lifestyle: lifestyleNotes,
     });
   };
 
@@ -405,6 +415,26 @@ export default function CloneSetup() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                  <ShieldCheck size={12} className="text-sage" />
+                  클론이 말하지 않을 정보 (선택사항)
+                </label>
+                <textarea
+                  value={privacyBoundaries}
+                  onChange={(e) => setPrivacyBoundaries(e.target.value)}
+                  placeholder="예: 직장명, 연락처, 가족 정보, 과거 연애사처럼 AI 클론이 대화에서 언급하지 않았으면 하는 내용을 적어주세요."
+                  maxLength={500}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground/50 focus:border-sage focus:ring-2 focus:ring-sage/10 focus:outline-none transition-all resize-none leading-relaxed"
+                />
+                <div className="flex justify-end">
+                  <span className="text-[10px] text-muted-foreground">
+                    {privacyBoundaries.length}/500
+                  </span>
+                </div>
+              </div>
+
               {/* 작성 팁 */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-foreground">작성 팁</p>
@@ -597,8 +627,43 @@ export default function CloneSetup() {
                       </p>
                     </div>
                   )}
+                  {privacyBoundaries && (
+                    <div className="pt-1 border-t border-border">
+                      <span className="text-muted-foreground">공개 금지/주의 정보</span>
+                      <p className="text-foreground font-medium mt-1 line-clamp-2">
+                        {privacyBoundaries}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setAcceptedAiConsent((value) => !value)}
+                className={`w-full warm-card p-4 flex items-start gap-3 text-left transition-all ${
+                  acceptedAiConsent ? "border-sage bg-sage-light/30" : ""
+                }`}
+              >
+                <div
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                    acceptedAiConsent
+                      ? "border-sage bg-sage text-white"
+                      : "border-border bg-white"
+                  }`}
+                >
+                  {acceptedAiConsent && <Check size={13} />}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    AI 클론 운영 원칙에 동의합니다
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    클론은 실제 만남이나 연락을 대신 결정하지 않고, 동의한 범위
+                    안에서 사전 궁합 탐색과 리포트 생성을 위해서만 대화합니다.
+                  </p>
+                </div>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -618,7 +683,7 @@ export default function CloneSetup() {
           ) : (
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || saveProfileMutation.isPending}
+              disabled={isGenerating || saveProfileMutation.isPending || !acceptedAiConsent}
               className="w-full h-13 gradient-sage text-white font-semibold text-base rounded-full shadow-lg shadow-sage/20 disabled:opacity-60"
             >
               {isGenerating ? (

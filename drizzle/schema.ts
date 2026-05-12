@@ -80,7 +80,7 @@ export const cloneChats = mysqlTable("clone_chats", {
   userAId: int("userAId").notNull(), // 클론 A의 소유자
   userBId: int("userBId").notNull(), // 클론 B의 소유자
   status: mysqlEnum("status", ["in_progress", "completed", "failed"]).default("in_progress").notNull(),
-  messages: json("messages").$type<Array<{ role: string; content: string; timestamp: number }>>(),
+  messages: json("messages").$type<Array<{ role: string; displayName?: string; content: string; timestamp: number }>>(),
   totalMessages: int("totalMessages").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
