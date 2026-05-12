@@ -1,11 +1,11 @@
 /**
  * Admin Router - 관리자 전용 tRPC 프로시저
- * 사용자 관리, 통계, 결제 내역 등 관리자 기능
+ * 사용자 관리, 통계, 결제 내역, 하트 부여 등 관리자 기능
  */
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { users } from "../drizzle/schema";
+import { users, userHearts, heartTransactions } from "../drizzle/schema";
 import { eq, desc, sql, like, or } from "drizzle-orm";
 
 export const adminRouter = router({
@@ -34,17 +34,22 @@ export const adminRouter = router({
       .from(users)
       .where(sql`${users.createdAt} >= ${today}`);
 
+    // 하트 거래 기반 매출 집계
+    const [revenueResult] = await db
+      .select({ total: sql<number>`COALESCE(SUM(${heartTransactions.amount}), 0)` })
+      .from(heartTransactions)
+      .where(eq(heartTransactions.type, "purchase"));
+
     return {
       totalUsers: userCount?.count ?? 0,
       newUsersToday: newToday?.count ?? 0,
-      // Mock data for features not yet backed by tables
-      totalMatches: 156,
-      totalRevenue: 2450000,
-      activeClones: Math.floor((userCount?.count ?? 0) * 0.7),
+      totalMatches: 0,
+      totalRevenue: revenueResult?.total ?? 0,
+      activeClones: 0,
     };
   }),
 
-  // 사용자 목록 조회
+  // 사용자 목록 조회 (하트 잔액 포함)
   listUsers: adminProcedure
     .input(
       z.object({
@@ -80,6 +85,19 @@ export const adminRouter = router({
         .limit(input.limit)
         .offset(offset);
 
+      // 각 사용자의 하트 잔액 조회
+      const userIds = userList.map((u) => u.id);
+      let heartsMap: Record<number, number> = {};
+      if (userIds.length > 0) {
+        const hearts = await db
+          .select()
+          .from(userHearts)
+          .where(sql`${userHearts.userId} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+        hearts.forEach((h) => {
+          heartsMap[h.userId] = h.balance;
+        });
+      }
+
       return {
         users: userList.map((u) => ({
           id: u.id,
@@ -89,6 +107,7 @@ export const adminRouter = router({
           loginMethod: u.loginMethod,
           createdAt: u.createdAt,
           lastSignedIn: u.lastSignedIn,
+          heartBalance: heartsMap[u.id] ?? 0,
         })),
         total: totalResult?.count ?? 0,
         page: input.page,
@@ -118,6 +137,103 @@ export const adminRouter = router({
       return { success: true };
     }),
 
+  // 하트 부여
+  grantHearts: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        amount: z.number().min(1).max(10000),
+        description: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database not available");
+      }
+
+      // 대상 사용자 존재 검증
+      const [targetUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!targetUser) {
+        throw new Error("해당 사용자를 찾을 수 없습니다.");
+      }
+
+      // 현재 잔액 조회
+      const [existing] = await db
+        .select()
+        .from(userHearts)
+        .where(eq(userHearts.userId, input.userId))
+        .limit(1);
+
+      // 잔액 업데이트 + 거래 내역 기록 (순차 실행, 에러 시 throw)
+      if (existing) {
+        await db
+          .update(userHearts)
+          .set({ balance: existing.balance + input.amount })
+          .where(eq(userHearts.userId, input.userId));
+      } else {
+        await db.insert(userHearts).values({
+          userId: input.userId,
+          balance: input.amount,
+        });
+      }
+
+      await db.insert(heartTransactions).values({
+        userId: input.userId,
+        amount: input.amount,
+        type: "admin_grant",
+        description: input.description || `관리자가 하트 ${input.amount}개 부여`,
+        adminId: ctx.user.id,
+      });
+
+      return {
+        success: true,
+        newBalance: (existing?.balance ?? 0) + input.amount,
+      };
+    }),
+
+  // 특정 사용자의 하트 거래 내역 조회
+  userHeartHistory: adminProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        limit: z.number().min(1).max(50).default(20),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { transactions: [], balance: 0 };
+
+      const [heartRecord] = await db
+        .select()
+        .from(userHearts)
+        .where(eq(userHearts.userId, input.userId))
+        .limit(1);
+
+      const transactions = await db
+        .select()
+        .from(heartTransactions)
+        .where(eq(heartTransactions.userId, input.userId))
+        .orderBy(desc(heartTransactions.createdAt))
+        .limit(input.limit);
+
+      return {
+        balance: heartRecord?.balance ?? 0,
+        transactions: transactions.map((t) => ({
+          id: t.id,
+          amount: t.amount,
+          type: t.type,
+          description: t.description,
+          createdAt: t.createdAt,
+        })),
+      };
+    }),
+
   // 최근 가입자 목록
   recentUsers: adminProcedure.query(async () => {
     const db = await getDb();
@@ -139,7 +255,7 @@ export const adminRouter = router({
     }));
   }),
 
-  // Mock: 결제 내역 (실제 결제 테이블 구현 전 목업)
+  // 결제 내역 (실제 결제 테이블 구현 전 - 빈 데이터 반환)
   payments: adminProcedure
     .input(
       z.object({
@@ -147,43 +263,31 @@ export const adminRouter = router({
         limit: z.number().min(1).max(50).default(20),
       })
     )
-    .query(async ({ input }) => {
-      // Mock payment data
-      const mockPayments = [
-        { id: 1, userName: "별빛산책자", amount: 9900, method: "카카오페이", product: "하트 10개", status: "완료", date: new Date("2026-05-11T14:30:00") },
-        { id: 2, userName: "도시의밤", amount: 29900, method: "토스페이", product: "프리미엄 구독", status: "완료", date: new Date("2026-05-11T12:15:00") },
-        { id: 3, userName: "커피향기", amount: 4900, method: "카드결제", product: "하트 5개", status: "완료", date: new Date("2026-05-11T10:00:00") },
-        { id: 4, userName: "바다소리", amount: 9900, method: "구글페이", product: "하트 10개", status: "완료", date: new Date("2026-05-10T22:45:00") },
-        { id: 5, userName: "숲속여행", amount: 29900, method: "토스페이", product: "프리미엄 구독", status: "완료", date: new Date("2026-05-10T18:30:00") },
-        { id: 6, userName: "하늘빛", amount: 4900, method: "카카오페이", product: "하트 5개", status: "환불", date: new Date("2026-05-10T15:00:00") },
-        { id: 7, userName: "달빛정원", amount: 49900, method: "카드결제", product: "하트 50개", status: "완료", date: new Date("2026-05-10T11:20:00") },
-        { id: 8, userName: "봄날의꿈", amount: 9900, method: "카카오페이", product: "하트 10개", status: "완료", date: new Date("2026-05-09T20:10:00") },
-      ];
-
+    .query(async () => {
       return {
-        payments: mockPayments.slice((input.page - 1) * input.limit, input.page * input.limit),
-        total: mockPayments.length,
-        totalRevenue: mockPayments.filter(p => p.status === "완료").reduce((sum, p) => sum + p.amount, 0),
+        payments: [] as Array<{
+          id: number;
+          userName: string;
+          amount: number;
+          method: string;
+          product: string;
+          status: string;
+          date: Date;
+        }>,
+        total: 0,
+        totalRevenue: 0,
       };
     }),
 
-  // Mock: 매칭 현황
+  // 매칭 현황 (실제 매칭 테이블 구현 전 - 빈 데이터 반환)
   matchStats: adminProcedure.query(async () => {
     return {
-      activeChats: 42,
-      completedReports: 89,
-      pendingMatches: 23,
-      averageCompatibility: 78.5,
-      topTopics: ["여행", "음악", "영화", "요리", "독서"],
-      dailyMatches: [
-        { date: "05/06", count: 12 },
-        { date: "05/07", count: 18 },
-        { date: "05/08", count: 15 },
-        { date: "05/09", count: 22 },
-        { date: "05/10", count: 19 },
-        { date: "05/11", count: 25 },
-        { date: "05/12", count: 21 },
-      ],
+      activeChats: 0,
+      completedReports: 0,
+      pendingMatches: 0,
+      averageCompatibility: 0,
+      topTopics: [] as string[],
+      dailyMatches: [] as Array<{ date: string; count: number }>,
     };
   }),
 });

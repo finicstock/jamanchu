@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User } from "lucide-react";
+import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User, Settings } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
@@ -88,6 +88,15 @@ export default function Home() {
                 <User size={14} className="text-sage" />
                 <span className="text-xs font-medium text-sage">{user?.name || '회원'}</span>
               </div>
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => setLocation("/admin")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  <Settings size={12} />
+                  관리자
+                </button>
+              )}
               <button
                 onClick={() => logout()}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"

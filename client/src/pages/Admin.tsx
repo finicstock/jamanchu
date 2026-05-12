@@ -1,7 +1,7 @@
 /**
  * Admin Dashboard - 자만추 관리자 페이지
  * 네이버 프리미엄 콘텐츠 관리자 스타일 디자인
- * 깔끔한 사이드바 + 통계 카드 + 데이터 테이블
+ * 깔끔한 사이드바 + 통계 카드 + 데이터 테이블 + 하트 부여
  */
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -24,6 +24,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  Gift,
+  X,
+  Clock,
+  ArrowLeft,
 } from "lucide-react";
 
 type AdminTab = "overview" | "users" | "payments" | "matches";
@@ -91,7 +95,10 @@ export default function Admin() {
       <aside className="w-60 bg-white border-r border-gray-200 flex flex-col fixed h-full z-30">
         {/* Logo */}
         <div className="h-14 flex items-center px-5 border-b border-gray-100">
-          <span className="font-bold text-base text-gray-900">자만추</span>
+          <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <ArrowLeft size={14} className="text-gray-400" />
+            <span className="font-bold text-base text-gray-900">자만추</span>
+          </a>
           <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-gray-900 text-white rounded font-medium">ADMIN</span>
         </div>
 
@@ -240,6 +247,197 @@ function OverviewTab() {
   );
 }
 
+// ============ Heart Grant Modal ============
+function HeartGrantModal({
+  userId,
+  userName,
+  currentBalance,
+  onClose,
+}: {
+  userId: number;
+  userName: string;
+  currentBalance: number;
+  onClose: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [isGranting, setIsGranting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [newBalance, setNewBalance] = useState(0);
+
+  const grantHearts = trpc.admin.grantHearts.useMutation();
+  const { data: history } = trpc.admin.userHeartHistory.useQuery({ userId, limit: 10 });
+  const utils = trpc.useUtils();
+
+  const handleGrant = async () => {
+    const num = parseInt(amount);
+    if (!num || num < 1) return;
+    setIsGranting(true);
+    try {
+      const result = await grantHearts.mutateAsync({
+        userId,
+        amount: num,
+        description: description || undefined,
+      });
+      setNewBalance(result.newBalance);
+      setSuccess(true);
+      utils.admin.listUsers.invalidate();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGranting(false);
+    }
+  };
+
+  const quickAmounts = [1, 5, 10, 30, 50, 100];
+
+  const typeLabel: Record<string, string> = {
+    admin_grant: "관리자 부여",
+    purchase: "구매",
+    use_chat: "채팅 사용",
+    use_report: "리포트 열람",
+    use_photo: "사진 열람",
+    refund: "환불",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">하트 부여</h3>
+            <p className="text-xs text-gray-500 mt-0.5">{userName}님에게 하트를 부여합니다</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+            <X size={16} className="text-gray-400" />
+          </button>
+        </div>
+
+        {success ? (
+          /* Success State */
+          <div className="p-6 text-center space-y-4">
+            <div className="h-14 w-14 mx-auto bg-green-50 rounded-full flex items-center justify-center">
+              <Heart size={24} className="text-green-500 fill-green-500" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">부여 완료!</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {userName}님에게 하트 <span className="font-bold text-pink-500">{amount}개</span>를 부여했습니다.
+              </p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                현재 잔액: <span className="font-bold text-gray-900">{newBalance}개</span>
+              </p>
+            </div>
+            <Button onClick={onClose} className="w-full">확인</Button>
+          </div>
+        ) : (
+          /* Grant Form */
+          <div className="p-6 space-y-5">
+            {/* Current Balance */}
+            <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-xl">
+              <Heart size={18} className="text-pink-500 fill-pink-500" />
+              <div>
+                <p className="text-xs text-pink-600">현재 보유 하트</p>
+                <p className="text-lg font-bold text-pink-700">{currentBalance}개</p>
+              </div>
+            </div>
+
+            {/* Amount Input */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">부여할 하트 수</label>
+              <Input
+                type="number"
+                placeholder="수량 입력"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min={1}
+                max={10000}
+                className="h-10"
+              />
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {quickAmounts.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setAmount(String(q))}
+                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                      amount === String(q)
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    {q}개
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1.5 block">사유 (선택)</label>
+              <Input
+                placeholder="예: 이벤트 당첨, 불편 보상 등"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="h-10"
+              />
+            </div>
+
+            {/* Grant Button */}
+            <Button
+              onClick={handleGrant}
+              disabled={!amount || parseInt(amount) < 1 || isGranting}
+              className="w-full h-10 bg-pink-500 hover:bg-pink-600 text-white"
+            >
+              {isGranting ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  처리 중...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Gift size={14} />
+                  하트 {amount || 0}개 부여하기
+                </span>
+              )}
+            </Button>
+
+            {/* Transaction History */}
+            {history && history.transactions.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                  <Clock size={12} />
+                  최근 거래 내역
+                </p>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {history.transactions.map((t) => (
+                    <div key={t.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-xs font-medium text-gray-700">
+                          {typeLabel[t.type] || t.type}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {new Date(t.createdAt).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <span className={`text-xs font-bold ${t.amount > 0 ? "text-green-600" : "text-red-500"}`}>
+                        {t.amount > 0 ? "+" : ""}{t.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ============ Users Tab ============
 function UsersTab({
   search,
@@ -259,6 +457,13 @@ function UsersTab({
   });
   const updateRole = trpc.admin.updateUserRole.useMutation();
   const utils = trpc.useUtils();
+
+  // Heart grant modal state
+  const [heartModal, setHeartModal] = useState<{
+    userId: number;
+    userName: string;
+    balance: number;
+  } | null>(null);
 
   const handleRoleChange = async (userId: number, newRole: "user" | "admin") => {
     await updateRole.mutateAsync({ userId, role: newRole });
@@ -296,7 +501,7 @@ function UsersTab({
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">이름</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">이메일</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">역할</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">로그인 방식</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">하트</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">가입일</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">최근 접속</th>
                 <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">작업</th>
@@ -328,7 +533,12 @@ function UsersTab({
                         {u.role === "admin" ? "관리자" : "일반"}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{u.loginMethod || "-"}</td>
+                    <td className="px-5 py-3">
+                      <span className="flex items-center gap-1 text-sm">
+                        <Heart size={12} className="text-pink-500 fill-pink-500" />
+                        <span className="font-medium text-gray-900">{u.heartBalance}</span>
+                      </span>
+                    </td>
                     <td className="px-5 py-3 text-sm text-gray-500">
                       {new Date(u.createdAt).toLocaleDateString("ko-KR")}
                     </td>
@@ -336,16 +546,25 @@ function UsersTab({
                       {new Date(u.lastSignedIn).toLocaleDateString("ko-KR")}
                     </td>
                     <td className="px-5 py-3">
-                      <button
-                        onClick={() => handleRoleChange(u.id, u.role === "admin" ? "user" : "admin")}
-                        className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                          u.role === "admin"
-                            ? "bg-red-50 text-red-600 hover:bg-red-100"
-                            : "bg-blue-50 text-blue-600 hover:bg-blue-100"
-                        }`}
-                      >
-                        {u.role === "admin" ? "일반으로 변경" : "관리자로 승격"}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setHeartModal({ userId: u.id, userName: u.name || "사용자", balance: u.heartBalance })}
+                          className="text-xs px-2.5 py-1 rounded-md font-medium bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors flex items-center gap-1"
+                        >
+                          <Gift size={10} />
+                          하트 부여
+                        </button>
+                        <button
+                          onClick={() => handleRoleChange(u.id, u.role === "admin" ? "user" : "admin")}
+                          className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
+                            u.role === "admin"
+                              ? "bg-red-50 text-red-600 hover:bg-red-100"
+                              : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          }`}
+                        >
+                          {u.role === "admin" ? "일반으로" : "관리자로"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -379,6 +598,16 @@ function UsersTab({
           </div>
         )}
       </div>
+
+      {/* Heart Grant Modal */}
+      {heartModal && (
+        <HeartGrantModal
+          userId={heartModal.userId}
+          userName={heartModal.userName}
+          currentBalance={heartModal.balance}
+          onClose={() => setHeartModal(null)}
+        />
+      )}
     </div>
   );
 }
@@ -415,6 +644,18 @@ function PaymentsTab() {
               {isLoading ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-8 text-center text-sm text-gray-400">로딩 중...</td>
+                </tr>
+              ) : !data?.payments.length ? (
+                <tr>
+                  <td colSpan={7} className="px-5 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                        <CreditCard size={18} className="text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500 font-medium">결제 내역이 없습니다</p>
+                      <p className="text-xs text-gray-400">결제가 발생하면 여기에 표시됩니다.</p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 data?.payments.map((p) => (
@@ -481,41 +722,63 @@ function MatchesTab() {
         ))}
       </div>
 
-      {/* Daily Matches Chart (Simple bar) */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">일별 매칭 추이</h3>
-        <div className="flex items-end gap-3 h-40">
-          {data?.dailyMatches.map((d) => {
-            const maxCount = Math.max(...(data?.dailyMatches.map(x => x.count) ?? [1]));
-            const height = (d.count / maxCount) * 100;
-            return (
-              <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs text-gray-600 font-medium">{d.count}</span>
-                <div
-                  className="w-full bg-gray-900 rounded-t-md transition-all"
-                  style={{ height: `${height}%`, minHeight: "4px" }}
-                />
-                <span className="text-[10px] text-gray-400">{d.date}</span>
+      {/* Content or Empty State */}
+      {!data?.dailyMatches.length && !data?.topTopics.length ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <BarChart3 size={22} className="text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500 font-medium">매칭 데이터가 없습니다</p>
+            <p className="text-xs text-gray-400">사용자들이 클론을 만들고 매칭이 시작되면<br />여기에 통계가 표시됩니다.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Daily Matches Chart (Simple bar) */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">일별 매칭 추이</h3>
+            {data?.dailyMatches.length ? (
+              <div className="flex items-end gap-3 h-40">
+                {data.dailyMatches.map((d) => {
+                  const maxCount = Math.max(...(data.dailyMatches.map(x => x.count) ?? [1]));
+                  const height = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-xs text-gray-600 font-medium">{d.count}</span>
+                      <div
+                        className="w-full bg-gray-900 rounded-t-md transition-all"
+                        style={{ height: `${height}%`, minHeight: "4px" }}
+                      />
+                      <span className="text-[10px] text-gray-400">{d.date}</span>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Top Topics */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 대화 주제</h3>
-        <div className="flex flex-wrap gap-2">
-          {data?.topTopics.map((topic, i) => (
-            <span
-              key={topic}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium"
-            >
-              #{topic}
-            </span>
-          ))}
-        </div>
-      </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-8">데이터가 없습니다.</p>
+            )}
+          </div>
+          {/* Top Topics */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 대화 주제</h3>
+            {data?.topTopics.length ? (
+              <div className="flex flex-wrap gap-2">
+                {data.topTopics.map((topic) => (
+                  <span
+                    key={topic}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full font-medium"
+                  >
+                    #{topic}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 text-center py-4">데이터가 없습니다.</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

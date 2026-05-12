@@ -1,0 +1,1 @@
+ALTER TABLE `user_hearts` ADD CONSTRAINT `user_hearts_userId_unique` UNIQUE(`userId`);
