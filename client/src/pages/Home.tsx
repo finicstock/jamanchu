@@ -7,7 +7,8 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User, Settings } from "lucide-react";
+import { Heart, MessageSquare, FileText, Shield, Sparkles, ArrowRight, LogIn, LogOut, User, Settings, Bell } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
@@ -51,6 +52,16 @@ const FEATURES = [
   },
 ];
 
+function NotificationBadge() {
+  const { data: count } = trpc.notification.getUnreadCount.useQuery();
+  if (!count) return null;
+  return (
+    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-[#E8725C] text-white text-[9px] font-bold flex items-center justify-center">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export default function Home() {
   // The userAuth hooks provides authentication state
   // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
@@ -88,6 +99,20 @@ export default function Home() {
                 <User size={14} className="text-sage" />
                 <span className="text-xs font-medium text-sage">{user?.name || '회원'}</span>
               </div>
+              <button
+                onClick={() => setLocation("/notifications")}
+                className="relative flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Bell size={14} />
+                <NotificationBadge />
+              </button>
+              <button
+                onClick={() => setLocation("/mypage")}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-warm-coral-light text-warm-coral text-xs font-medium rounded-full hover:bg-[#f5d0c8] transition-colors"
+              >
+                <Heart size={12} />
+                마이페이지
+              </button>
               {user?.role === "admin" && (
                 <button
                   onClick={() => setLocation("/admin")}

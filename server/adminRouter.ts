@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { users, userHearts, heartTransactions } from "../drizzle/schema";
+import { users, userHearts, heartTransactions, notifications } from "../drizzle/schema";
 import { eq, desc, sql, like, or } from "drizzle-orm";
 
 export const adminRouter = router({
@@ -190,7 +190,14 @@ export const adminRouter = router({
         description: input.description || `관리자가 하트 ${input.amount}개 부여`,
         adminId: ctx.user.id,
       });
-
+      // 하트 부여 알림 생성
+      await db.insert(notifications).values({
+        userId: input.userId,
+        type: "heart_received",
+        title: `하트 ${input.amount}개가 지급되었습니다!`,
+        message: input.description || `관리자로부터 하트 ${input.amount}개를 받았습니다.`,
+        metadata: { amount: input.amount, adminId: ctx.user.id },
+      });
       return {
         success: true,
         newBalance: (existing?.balance ?? 0) + input.amount,

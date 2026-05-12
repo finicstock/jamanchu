@@ -11,6 +11,8 @@ import ChatLog from "./pages/ChatLog";
 import Report from "./pages/Report";
 import Pricing from "./pages/Pricing";
 import Admin from "./pages/Admin";
+import MyPage from "./pages/MyPage";
+import Notifications from "./pages/Notifications";
 import { AnimatePresence } from "framer-motion";
 
 function Router() {
@@ -25,6 +27,8 @@ function Router() {
         <Route path="/report" component={Report} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/admin" component={Admin} />
+        <Route path="/mypage" component={MyPage} />
+        <Route path="/notifications" component={Notifications} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

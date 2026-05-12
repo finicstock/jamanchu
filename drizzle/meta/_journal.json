@@ -22,6 +22,20 @@
       "when": 1778571342348,
       "tag": "0002_fine_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1778572820278,
+      "tag": "0003_open_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1778578097079,
+      "tag": "0004_talented_callisto",
+      "breakpoints": true
     }
   ]
 }

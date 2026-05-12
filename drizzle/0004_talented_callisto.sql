@@ -1,0 +1,1 @@
+ALTER TABLE `chemistry_reports` ADD `status` enum('completed','failed','pending') DEFAULT 'completed' NOT NULL;
