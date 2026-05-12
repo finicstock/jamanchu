@@ -63,3 +63,11 @@
 - [x] 리포트 상세 페이지 - tRPC getReportById 프로시저 연동
 - [x] 리포트 목록 페이지에서 상세 페이지로 연결
 - [x] 대시보드에서 채팅/리포트 상세 페이지로 직접 이동 링크
+- [x] CloneSetup 닉네임/나이 입력 필드에 useState 바인딩
+- [x] CloneSetup 성별/관심성별/성격/관심사 → 유효성 검증 (필수 입력 체크)
+- [x] CloneSetup handleGenerate에서 trpc.clone.saveProfile 뮤테이션 호출하여 실제 DB 저장
+- [x] CloneSetup 성별 한글→영문 매핑 (남성→male, 여성→female 등)
+- [x] CloneSetup 컨텍스트 업로드 2단계 → 자기소개 텍스트 직접 입력 기능 구현
+- [x] Dashboard 클론 미생성 시 매칭 시작 버튼 비활성화 + 클론 생성 유도 UI
+- [x] Dashboard 매칭 시작 시 로딩/진행 상태 UI 개선
+- [x] 매칭 상대 없을 때 사용자 친화적 안내 메시지 + 하트 환불

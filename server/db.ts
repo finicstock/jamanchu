@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, userHearts, heartTransactions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -71,6 +71,25 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     await db.insert(users).values(values).onDuplicateKeyUpdate({
       set: updateSet,
     });
+
+    // 신규 사용자인 경우 초기 하트 3개 부여
+    const existingUser = await db.select().from(users).where(eq(users.openId, user.openId)).limit(1);
+    if (existingUser.length > 0) {
+      const userId = existingUser[0].id;
+      const existingHearts = await db.select().from(userHearts).where(eq(userHearts.userId, userId)).limit(1);
+      if (existingHearts.length === 0) {
+        await db.insert(userHearts).values({
+          userId,
+          balance: 3,
+        });
+        await db.insert(heartTransactions).values({
+          userId,
+          amount: 3,
+          type: "admin_grant",
+          description: "회원가입 환영 하트",
+        });
+      }
+    }
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;

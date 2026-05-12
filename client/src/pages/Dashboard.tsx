@@ -24,6 +24,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import LoginModal from "@/components/LoginModal";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -44,14 +45,22 @@ export default function Dashboard() {
   const { data: reports, refetch: refetchReports } = trpc.clone.getMyReports.useQuery(undefined, { enabled: isAuthenticated });
   const { data: profile } = trpc.profile.getMyProfile.useQuery(undefined, { enabled: isAuthenticated });
 
+  const utils = trpc.useUtils();
   const startChatMutation = trpc.clone.startChat.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetchChats();
       refetchReports();
+      utils.profile.getMyProfile.invalidate();
       setIsSimulating(false);
+      toast.success(`${data.partnerNickname}님과의 대화가 완료되었습니다!`, {
+        description: `호환성 점수: ${data.report.overallScore}점`,
+      });
     },
-    onError: () => {
+    onError: (err) => {
       setIsSimulating(false);
+      toast.error("매칭 실패", {
+        description: err.message,
+      });
     },
   });
 
@@ -140,7 +149,7 @@ export default function Dashboard() {
                 ) : (
                   <>
                     <Play size={16} className="mr-2" />
-                    새로운 매칭 시작하기
+                    새로운 매칭 시작하기 (♥ 1)
                   </>
                 )}
               </Button>

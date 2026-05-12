@@ -2,8 +2,10 @@ import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import { invokeLLM } from "./_core/llm";
 import { getDb } from "./db";
-import { cloneProfiles, cloneChats, chemistryReports, notifications } from "../drizzle/schema";
-import { eq, and, desc, or } from "drizzle-orm";
+import { cloneProfiles, cloneChats, chemistryReports, notifications, userHearts, heartTransactions } from "../drizzle/schema";
+import { eq, and, desc, or, sql } from "drizzle-orm";
+
+const MATCH_COST = 1; // 매칭 1회당 하트 소비
 
 export const cloneRouter = router({
   // 클론 프로필 생성/업데이트
@@ -75,20 +77,40 @@ export const cloneRouter = router({
   }),
 
   // AI 클론 대화 시뮬레이션 시작
-  startChat: protectedProcedure.mutation(async ({ ctx }) => {
+    startChat: protectedProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-
     // 내 클론 프로필 확인
     const myClone = await db
       .select()
       .from(cloneProfiles)
       .where(eq(cloneProfiles.userId, ctx.user.id))
       .limit(1);
-
     if (!myClone.length) {
       throw new Error("클론 프로필을 먼저 생성해주세요.");
     }
+    // 하트 잔액 확인 및 차감
+    const heartsRow = await db
+      .select()
+      .from(userHearts)
+      .where(eq(userHearts.userId, ctx.user.id))
+      .limit(1);
+    const currentBalance = heartsRow[0]?.balance ?? 0;
+    if (currentBalance < MATCH_COST) {
+      throw new Error(`하트가 부족합니다. (현재 ${currentBalance}개, 필요 ${MATCH_COST}개) 하트를 충전해주세요.`);
+    }
+    // 하트 차감
+    await db
+      .update(userHearts)
+      .set({ balance: sql`${userHearts.balance} - ${MATCH_COST}` })
+      .where(eq(userHearts.userId, ctx.user.id));
+    // 거래 내역 기록
+    await db.insert(heartTransactions).values({
+      userId: ctx.user.id,
+      amount: -MATCH_COST,
+      type: "use_chat",
+      description: "AI 매칭 대화 시작",
+    });
 
     // 매칭 가능한 상대 클론 찾기 (성별 조건 매칭)
     const myProfile = myClone[0];
@@ -113,7 +135,18 @@ export const cloneRouter = router({
     });
 
     if (!filtered.length) {
-      throw new Error("현재 매칭 가능한 상대가 없습니다. 잠시 후 다시 시도해주세요.");
+      // 매칭 실패 시 하트 환불
+      await db
+        .update(userHearts)
+        .set({ balance: sql`${userHearts.balance} + ${MATCH_COST}` })
+        .where(eq(userHearts.userId, ctx.user.id));
+      await db.insert(heartTransactions).values({
+        userId: ctx.user.id,
+        amount: MATCH_COST,
+        type: "refund",
+        description: "매칭 상대 없음 - 하트 환불",
+      });
+      throw new Error("현재 매칭 가능한 상대가 없습니다. 하트는 환불되었습니다. 잠시 후 다시 시도해주세요.");
     }
 
     // 랜덤 매칭
