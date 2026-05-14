@@ -2,9 +2,39 @@
 
 ## 현재 배포 형태
 
-자만추는 Vite 웹앱과 Express API 서버로 구성되어 있다. 이번 단계에서는 앱스토어 심사 없이 바로 배포 가능한 설치형 PWA로 모바일 앱 배포 준비를 완료한다.
+자만추는 Vite 웹앱과 Express API 서버로 구성되어 있다. 모바일 배포는 두 단계로 나눈다.
 
-사용자는 HTTPS로 배포된 URL을 모바일 브라우저에서 열고 홈 화면에 추가하면 전체 화면 앱처럼 사용할 수 있다.
+1. PWA: HTTPS URL을 홈 화면에 추가해 앱처럼 실행한다.
+2. Android APK: GitHub Actions가 Capacitor Android 앱을 빌드해 설치 파일을 만든다.
+
+사용자가 "다운로드해서 설치하는 앱"을 원한다면 Android APK 방식을 사용한다.
+
+## Android APK 만들기
+
+1. GitHub 저장소로 이동한다.
+2. 상단의 `Actions` 탭을 누른다.
+3. 왼쪽 목록에서 `Build Android APK`를 선택한다.
+4. `Run workflow` 버튼을 누른다.
+5. 브랜치는 `codex/mvp-product-alignment`를 선택한다.
+6. 실행이 끝날 때까지 기다린다.
+7. 완료된 실행 화면 아래의 `Artifacts`에서 `jamanchu-android-apk`를 다운로드한다.
+8. 압축을 풀면 `jamanchu-debug.apk`가 나온다.
+9. 이 APK 파일을 안드로이드 휴대폰으로 옮겨 설치한다.
+
+처음 설치할 때 휴대폰에서 "알 수 없는 앱 설치 허용"을 켜야 할 수 있다. 이 APK는 테스트용 debug 빌드다. 플레이스토어 배포용으로는 release 서명과 AAB 빌드가 추가로 필요하다.
+
+## APK가 실제 서버를 보게 만들기
+
+기본 APK는 현재 웹 빌드를 앱 안에 넣는다. 로그인, 결제, 서버 저장 기능까지 실제로 쓰려면 HTTPS로 배포된 자만추 서버 주소를 GitHub Actions 변수로 넣는 것이 좋다.
+
+1. GitHub 저장소의 `Settings`로 이동한다.
+2. `Secrets and variables` > `Actions`로 이동한다.
+3. `Variables` 탭에서 `New repository variable`을 누른다.
+4. 이름은 `CAPACITOR_SERVER_URL`로 입력한다.
+5. 값은 배포된 HTTPS 주소를 입력한다. 예: `https://jamanchu.example.com`
+6. 다시 `Build Android APK` 워크플로를 실행한다.
+
+이 변수가 있으면 APK는 앱 내부 정적 파일 대신 배포된 서버 URL을 WebView로 연다.
 
 ## PWA 배포 체크리스트
 
